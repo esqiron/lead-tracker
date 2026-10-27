@@ -4,9 +4,10 @@ import Link from "next/link";
 import { PageSpinner } from "@/components/page-spinner";
 import { Badge, buttonClass, EmptyState, PageHeader } from "@/components/ui";
 import { ParamSelect, SearchInput } from "@/components/url-filters";
-import { canEditRole, requireReadyOrg } from "@/lib/auth";
+import { canEditRole, isAdminRole, requireReadyOrg } from "@/lib/auth";
 import { getMembers } from "@/lib/crm";
-import { cleanSearch, param } from "@/lib/forms";
+import { param } from "@/lib/forms";
+import { applyContactFilters, queryString, readContactFilters } from "@/lib/list-filters";
 import { contactName, formatDate, personName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,9 +36,8 @@ async function ContactsPageContent({ searchParams }: PageProps<"/contacts">) {
   const ctx = await requireReadyOrg();
   const { org, user } = ctx;
   const sp = await searchParams;
-  const q = cleanSearch(sp.q);
-  const owner = param(sp.owner);
-  const tag = param(sp.tag);
+  const filters = readContactFilters(sp);
+  const { tag } = filters;
   const page = Math.max(1, Number(param(sp.page)) || 1);
 
   const supabase = await createClient();
@@ -46,16 +46,7 @@ async function ContactsPageContent({ searchParams }: PageProps<"/contacts">) {
     .select(CONTACT_SELECT, { count: "exact" })
     .eq("org_id", org.id)
     .is("deleted_at", null);
-  if (q) {
-    // Match each word against name or email, so "ana pop" finds Ana Popescu.
-    for (const word of q.split(" ")) {
-      query = query.or(`first_name.ilike.%${word}%,last_name.ilike.%${word}%,email.ilike.%${word}%`);
-    }
-  }
-  if (owner === "me") query = query.eq("owner_id", user.id);
-  else if (owner === "none") query = query.is("owner_id", null);
-  else if (owner) query = query.eq("owner_id", owner);
-  if (tag) query = query.contains("tags", [tag]);
+  query = applyContactFilters(query, filters, user.id);
 
   const [{ data, count, error }, members] = await Promise.all([
     query
@@ -81,7 +72,7 @@ async function ContactsPageContent({ searchParams }: PageProps<"/contacts">) {
   for (const l of openLeads ?? []) if (l.contact_id) openCount.set(l.contact_id, (openCount.get(l.contact_id) ?? 0) + 1);
 
   const canEdit = canEditRole(ctx.role);
-  const filtered = Boolean(q || owner || tag);
+  const filtered = Boolean(filters.q || filters.owner || filters.tag);
   const pages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   return (
@@ -90,11 +81,23 @@ async function ContactsPageContent({ searchParams }: PageProps<"/contacts">) {
         title="Contacts"
         description={`${count ?? 0} contact${count === 1 ? "" : "s"}${filtered ? (count === 1 ? " matches your filters" : " match your filters") : ""}`}
         actions={
-          canEdit ? (
-            <Link href="/contacts/new" className={buttonClass("primary")}>
-              New contact
-            </Link>
-          ) : null
+          <>
+            {isAdminRole(ctx.role) && count ? (
+              <a href={`/contacts/export?${queryString({ ...sp, page: undefined })}`} download className={buttonClass("secondary")}>
+                Export CSV
+              </a>
+            ) : null}
+            {isAdminRole(ctx.role) ? (
+              <Link href="/contacts/import" className={buttonClass("secondary")}>
+                Import CSV
+              </Link>
+            ) : null}
+            {canEdit ? (
+              <Link href="/contacts/new" className={buttonClass("primary")}>
+                New contact
+              </Link>
+            ) : null}
+          </>
         }
       />
 
@@ -104,9 +107,16 @@ async function ContactsPageContent({ searchParams }: PageProps<"/contacts">) {
           description="Contacts are the people you sell to. They're also created when you add a lead with a new contact."
           action={
             canEdit ? (
-              <Link href="/contacts/new" className={buttonClass("primary")}>
-                New contact
-              </Link>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link href="/contacts/new" className={buttonClass("primary")}>
+                  New contact
+                </Link>
+                {isAdminRole(ctx.role) ? (
+                  <Link href="/contacts/import" className={buttonClass("secondary")}>
+                    Import CSV
+                  </Link>
+                ) : null}
+              </div>
             ) : undefined
           }
         />

@@ -117,5 +117,5 @@ export async function finishSetup(formData: FormData) {
     .eq("id", org.id);
   if (error) throw new Error(error.message);
 
-  redirect("/dashboard");
+  redirect(field(formData, "mode") === "csv" ? "/contacts/import" : "/dashboard");
 }

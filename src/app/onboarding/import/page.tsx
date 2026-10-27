@@ -18,6 +18,13 @@ const OPTIONS = [
     variant: "primary" as const,
   },
   {
+    mode: "csv",
+    title: "Import a CSV",
+    description: "Bring in contacts and leads from a spreadsheet or another CRM. You'll map the columns before anything is imported.",
+    cta: "Import from CSV",
+    variant: "secondary" as const,
+  },
+  {
     mode: "empty",
     title: "Start with a clean slate",
     description: "Jump straight in and add your first leads yourself.",
@@ -34,9 +41,9 @@ async function ImportStepContent() {
       step="import"
       furthest={org!.setup_step}
       title="You're almost done"
-      description="Choose how you'd like to start. CSV import for existing contacts and leads is on the way."
+      description="Choose how you'd like to start. You can always import or add more later."
     >
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         {OPTIONS.map((option) => (
           <Card key={option.mode} className="flex flex-col p-5">
             <h2 className="font-medium text-zinc-900 dark:text-zinc-100">{option.title}</h2>

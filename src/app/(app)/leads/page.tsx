@@ -4,9 +4,10 @@ import Link from "next/link";
 import { PageSpinner } from "@/components/page-spinner";
 import { buttonClass, cx, EmptyState, PageHeader, StageBadge } from "@/components/ui";
 import { ParamSelect, SearchInput } from "@/components/url-filters";
-import { canEditRole, requireReadyOrg } from "@/lib/auth";
+import { canEditRole, isAdminRole, requireReadyOrg } from "@/lib/auth";
 import { getMembers, getSources, getStages } from "@/lib/crm";
-import { cleanSearch, param } from "@/lib/forms";
+import { param } from "@/lib/forms";
+import { applyLeadFilters, queryString, readLeadFilters } from "@/lib/list-filters";
 import { contactName, formatDate, formatDay, formatMoney, personName, todayIn } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { LeadBoard, type BoardCard } from "./lead-board";
@@ -49,10 +50,7 @@ async function LeadsPageContent({ searchParams }: PageProps<"/leads">) {
   const { org, user } = ctx;
   const sp = await searchParams;
   const view = sp.view === "table" ? "table" : "board";
-  const q = cleanSearch(sp.q);
-  const owner = param(sp.owner);
-  const source = param(sp.source);
-  const status = param(sp.status);
+  const filters = readLeadFilters(sp);
   const sort: SortKey = (param(sp.sort) as SortKey) in SORTS ? (param(sp.sort) as SortKey) : "created";
   const ascending = sp.dir === "asc";
   const page = Math.max(1, Number(param(sp.page)) || 1);
@@ -65,14 +63,9 @@ async function LeadsPageContent({ searchParams }: PageProps<"/leads">) {
     .select(LIST_SELECT, { count: "exact" })
     .eq("org_id", org.id)
     .is("deleted_at", null);
-  if (q) query = query.ilike("title", `%${q}%`);
-  if (owner === "me") query = query.eq("owner_id", user.id);
-  else if (owner === "none") query = query.is("owner_id", null);
-  else if (owner) query = query.eq("owner_id", owner);
-  if (source) query = query.eq("source_id", source);
+  query = applyLeadFilters(query, filters, user.id, { status: view === "table" });
 
   if (view === "table") {
-    if (status === "open" || status === "won" || status === "lost") query = query.eq("status", status);
     query = query
       .order(SORTS[sort], { ascending, nullsFirst: false })
       .order("created_at", { ascending: false })
@@ -85,7 +78,7 @@ async function LeadsPageContent({ searchParams }: PageProps<"/leads">) {
   if (error) throw new Error(error.message);
   const leads = data ?? [];
   const canEdit = canEditRole(ctx.role);
-  const filtered = Boolean(q || owner || source || status);
+  const filtered = Boolean(filters.q || filters.owner || filters.source || filters.status);
   const today = todayIn(org.timezone);
 
   const toolbar = (
@@ -133,11 +126,18 @@ async function LeadsPageContent({ searchParams }: PageProps<"/leads">) {
       title="Leads"
       description={`${count ?? 0} lead${count === 1 ? "" : "s"}${filtered ? (count === 1 ? " matches your filters" : " match your filters") : ""}`}
       actions={
-        canEdit ? (
-          <Link href="/leads/new" className={buttonClass("primary")}>
-            New lead
-          </Link>
-        ) : null
+        <>
+          {isAdminRole(ctx.role) && count ? (
+            <a href={`/leads/export?${queryString({ ...sp, view: undefined, sort: undefined, dir: undefined, page: undefined, ...(view === "board" ? { status: undefined } : {}) })}`} download className={buttonClass("secondary")}>
+              Export CSV
+            </a>
+          ) : null}
+          {canEdit ? (
+            <Link href="/leads/new" className={buttonClass("primary")}>
+              New lead
+            </Link>
+          ) : null}
+        </>
       }
     />
   );

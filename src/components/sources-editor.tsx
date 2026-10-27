@@ -1,15 +1,24 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { saveSources } from "../actions";
-import { BackLink } from "../wizard-frame";
+import { useActionState, useState, type ReactNode } from "react";
 import { Alert, Button, Input } from "@/components/ui";
+import type { FormState } from "@/lib/forms";
 import { SubmitButton } from "@/components/submit-button";
 
 type EditableSource = { key: string; id?: string; name: string };
 
-export function SourcesEditor({ initial }: { initial: EditableSource[] }) {
-  const [state, action] = useActionState(saveSources, {});
+export function SourcesEditor({
+  initial,
+  action: saveAction,
+  back,
+  submitLabel,
+}: {
+  initial: EditableSource[];
+  action: (state: FormState, formData: FormData) => Promise<FormState>;
+  back?: ReactNode;
+  submitLabel: string;
+}) {
+  const [state, action] = useActionState(saveAction, {});
   const [sources, setSources] = useState(initial);
 
   const payload = JSON.stringify(sources.map(({ id, name }) => ({ id, name: name.trim() })));
@@ -17,6 +26,7 @@ export function SourcesEditor({ initial }: { initial: EditableSource[] }) {
   return (
     <form action={action} className="space-y-6">
       {state.error ? <Alert>{state.error}</Alert> : null}
+      {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       <input type="hidden" name="sources" value={payload} />
 
       <ul className="space-y-2">
@@ -55,8 +65,8 @@ export function SourcesEditor({ initial }: { initial: EditableSource[] }) {
       </Button>
 
       <div className="flex items-center justify-between pt-2">
-        <BackLink to="pipeline" />
-        <SubmitButton pendingLabel="Saving…">Continue</SubmitButton>
+        {back ?? <span />}
+        <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>
       </div>
     </form>
   );

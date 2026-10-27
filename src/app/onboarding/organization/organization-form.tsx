@@ -4,15 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { saveOrganization } from "../actions";
 import { Alert, Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
-
-const CURRENCIES = ["EUR", "USD", "GBP", "RON", "CHF", "CAD", "AUD", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "JPY", "INR", "BRL"];
-
-const DATE_FORMATS = [
-  { value: "yyyy-MM-dd", example: "2026-03-14" },
-  { value: "dd/MM/yyyy", example: "14/03/2026" },
-  { value: "MM/dd/yyyy", example: "03/14/2026" },
-  { value: "dd.MM.yyyy", example: "14.03.2026" },
-];
+import { CURRENCIES, DATE_FORMATS } from "@/lib/org-options";
 
 type Initial = { name: string; currency: string; timezone: string; dateFormat: string };
 

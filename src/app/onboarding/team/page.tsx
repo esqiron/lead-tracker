@@ -6,9 +6,10 @@ import { isEmailConfigured } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 import { Alert, Button } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
-import { continueFromTeam, revokeInvitation } from "../actions";
+import { revokeInvitation } from "@/app/actions/invitations";
+import { continueFromTeam } from "../actions";
 import { BackLink, WizardFrame } from "../wizard-frame";
-import { InviteForm } from "./invite-form";
+import { InviteForm } from "@/components/invite-form";
 
 export const metadata: Metadata = { title: "Team" };
 

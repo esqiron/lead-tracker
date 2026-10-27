@@ -3,8 +3,9 @@ import { PageSpinner } from "@/components/page-spinner";
 import type { Metadata } from "next";
 import { requireOnboarding } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { WizardFrame } from "../wizard-frame";
-import { PipelineEditor, type EditableStage } from "./pipeline-editor";
+import { PipelineEditor, type EditableStage } from "@/components/pipeline-editor";
+import { savePipeline } from "../actions";
+import { BackLink, WizardFrame } from "../wizard-frame";
 
 export const metadata: Metadata = { title: "Pipeline" };
 
@@ -32,7 +33,7 @@ async function PipelineStepContent() {
       title="Your sales pipeline"
       description="These are the stages a lead moves through. We've started you with a common setup — rename, reorder or remove stages to match how you sell."
     >
-      <PipelineEditor initial={stages} />
+      <PipelineEditor initial={stages} action={savePipeline} back={<BackLink to="organization" />} submitLabel="Continue" />
     </WizardFrame>
   );
 }

@@ -1,9 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { savePipeline } from "../actions";
-import { BackLink } from "../wizard-frame";
+import { useActionState, useState, type ReactNode } from "react";
 import { Alert, Button, Input } from "@/components/ui";
+import type { FormState } from "@/lib/forms";
 import { SubmitButton } from "@/components/submit-button";
 
 export type EditableStage = {
@@ -14,8 +13,18 @@ export type EditableStage = {
   kind: "open" | "won" | "lost";
 };
 
-export function PipelineEditor({ initial }: { initial: EditableStage[] }) {
-  const [state, action] = useActionState(savePipeline, {});
+export function PipelineEditor({
+  initial,
+  action: saveAction,
+  back,
+  submitLabel,
+}: {
+  initial: EditableStage[];
+  action: (state: FormState, formData: FormData) => Promise<FormState>;
+  back?: ReactNode;
+  submitLabel: string;
+}) {
+  const [state, action] = useActionState(saveAction, {});
   const [stages, setStages] = useState(initial);
 
   const open = stages.filter((s) => s.kind === "open");
@@ -50,6 +59,7 @@ export function PipelineEditor({ initial }: { initial: EditableStage[] }) {
   return (
     <form action={action} className="space-y-6">
       {state.error ? <Alert>{state.error}</Alert> : null}
+      {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       <input type="hidden" name="stages" value={payload} />
 
       <section>
@@ -125,8 +135,8 @@ export function PipelineEditor({ initial }: { initial: EditableStage[] }) {
       </section>
 
       <div className="flex items-center justify-between pt-2">
-        <BackLink to="organization" />
-        <SubmitButton pendingLabel="Saving…">Continue</SubmitButton>
+        {back ?? <span />}
+        <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>
       </div>
     </form>
   );

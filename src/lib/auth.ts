@@ -116,6 +116,13 @@ export async function requireReadyOrg() {
   return { ...ctx, org: ctx.org, role: ctx.role };
 }
 
+// For admin-only settings pages; everyone else lands on their profile.
+export async function requireSettingsAdmin() {
+  const ctx = await requireReadyOrg();
+  if (!isAdminRole(ctx.role)) redirect("/settings/profile");
+  return ctx;
+}
+
 // For wizard steps. Admins may revisit earlier steps but not skip ahead.
 export async function requireOnboarding(step: WizardStep) {
   const ctx = await requireContext();

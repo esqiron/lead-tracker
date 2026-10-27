@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
   { href: "/contacts", label: "Contacts" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export function AppNav() {

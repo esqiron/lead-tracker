@@ -3,8 +3,9 @@ import { PageSpinner } from "@/components/page-spinner";
 import type { Metadata } from "next";
 import { requireOnboarding } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { WizardFrame } from "../wizard-frame";
-import { SourcesEditor } from "./sources-editor";
+import { SourcesEditor } from "@/components/sources-editor";
+import { saveSources } from "../actions";
+import { BackLink, WizardFrame } from "../wizard-frame";
 
 export const metadata: Metadata = { title: "Lead sources" };
 
@@ -20,7 +21,12 @@ async function SourcesStepContent() {
       title="Where do your leads come from?"
       description="Tag each lead with a source so reports can show which channels bring in the most business."
     >
-      <SourcesEditor initial={(data ?? []).map((s) => ({ key: s.id, id: s.id, name: s.name }))} />
+      <SourcesEditor
+        initial={(data ?? []).map((s) => ({ key: s.id, id: s.id, name: s.name }))}
+        action={saveSources}
+        back={<BackLink to="pipeline" />}
+        submitLabel="Continue"
+      />
     </WizardFrame>
   );
 }

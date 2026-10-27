@@ -8,7 +8,7 @@ An open-source lead tracker with contacts and reporting, for small teams. Self-h
 - **Teams**: invite people by email as Admin, Member or Viewer. Row Level Security enforces access in the database.
 - **Guided setup**: a first-run wizard for your organization, pipeline, lead sources and team.
 
-> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), and the activity timeline with tasks. Next: members/settings page, CSV import and export, inbound capture (API and embeddable form), and full reports. See [SPEC.md](SPEC.md).
+> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, and settings (organization, members, pipeline, sources, profile). Next: CSV import and export, inbound capture (API and embeddable form), and full reports. See [SPEC.md](SPEC.md).
 
 ## Quick start (local)
 

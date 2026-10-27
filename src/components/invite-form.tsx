@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { sendInvitations, type InviteState } from "../actions";
+import { sendInvitations, type InviteState } from "@/app/actions/invitations";
 import { Alert, Button, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
+import { CopyField } from "@/components/copy-field";
 
 type Row = { key: string };
 
@@ -92,27 +93,6 @@ function InviteResults({ results, emailEnabled }: { results: NonNullable<InviteS
           </ul>
         </Alert>
       ) : null}
-    </div>
-  );
-}
-
-function CopyField({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="mt-1 flex gap-2">
-      <Input readOnly value={value} aria-label="Invite link" className="h-9 font-mono text-xs" onFocus={(e) => e.target.select()} />
-      <Button
-        type="button"
-        variant="secondary"
-        className="h-9 shrink-0"
-        onClick={async () => {
-          await navigator.clipboard.writeText(value);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        }}
-      >
-        {copied ? "Copied" : "Copy"}
-      </Button>
     </div>
   );
 }

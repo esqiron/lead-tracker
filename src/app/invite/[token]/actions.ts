@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { setActiveOrg } from "@/lib/auth";
 import { field, validatePassword, type FormState } from "@/lib/forms";
+import { userMessage } from "@/lib/errors";
+import { allowed, requestIp, TOO_MANY } from "@/lib/rate-limit";
 
 async function pendingInvitation(token: string) {
   const supabase = await createClient();
@@ -16,7 +18,7 @@ async function pendingInvitation(token: string) {
 async function acceptAndEnter(token: string): Promise<FormState> {
   const supabase = await createClient();
   const { data: orgId, error } = await supabase.rpc("accept_invitation", { p_token: token });
-  if (error || !orgId) return { error: error?.message ?? "Couldn't accept the invitation." };
+  if (error || !orgId) return { error: userMessage(error, "Couldn't accept the invitation.") };
 
   await setActiveOrg(orgId);
   redirect("/");
@@ -27,6 +29,9 @@ export async function acceptInvitation(token: string): Promise<FormState> {
 }
 
 export async function signInAndAccept(token: string, _: FormState, formData: FormData): Promise<FormState> {
+  if (!(await allowed({ key: ["invite-ip", await requestIp()], max: 10, per: 600 }, { key: ["invite-token", token.slice(0, 16)], max: 10, per: 3600 }))) {
+    return { error: TOO_MANY };
+  }
   const invite = await pendingInvitation(token);
   if (!invite) return { error: "This invitation is no longer valid." };
 
@@ -43,6 +48,7 @@ export async function signInAndAccept(token: string, _: FormState, formData: For
 // The invite link proves the person controls the address, so the account is
 // created already confirmed.
 export async function createAccountAndAccept(token: string, _: FormState, formData: FormData): Promise<FormState> {
+  if (!(await allowed({ key: ["invite-ip", await requestIp()], max: 10, per: 600 }))) return { error: TOO_MANY };
   const invite = await pendingInvitation(token);
   if (!invite) return { error: "This invitation is no longer valid." };
 
@@ -66,7 +72,7 @@ export async function createAccountAndAccept(token: string, _: FormState, formDa
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email: invite.email, password });
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   return acceptAndEnter(token);
 }

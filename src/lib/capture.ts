@@ -130,10 +130,12 @@ export async function notifyLeadOwner(orgId: string, result: CaptureResult, data
       admin.from("organizations").select("name").eq("id", orgId).single(),
     ]);
     if (!owner || !org) return;
-    const who = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.email || "Someone";
+    const who = ([data.first_name, data.last_name].filter(Boolean).join(" ") || data.email || "Someone").slice(0, 60);
     const { html, text } = actionEmail({
       heading: `New lead: ${who}`,
-      body: `${who}${data.company ? ` from ${data.company}` : ""} came in through ${via} and was assigned to you in ${org.name}.${data.message ? ` They wrote: “${data.message.slice(0, 300)}”` : ""}`,
+      // Submitter text stays out of the email (it's unverified and could be
+      // phishing); it's on the lead's timeline instead.
+      body: `A new lead came in through ${via} and was assigned to you in ${org.name}.${data.message ? " They left a message, shown on the lead." : ""}`,
       buttonLabel: "Open the lead",
       url: `${env.siteUrl}/leads/${result.lead_id}`,
       footer: "You're getting this because new leads from this source are assigned to you.",
@@ -166,23 +168,3 @@ export async function authenticateApiKey(request: Request): Promise<{ id: string
   return { id: data.id, orgId: data.org_id };
 }
 
-// --- Abuse protection -------------------------------------------------------------
-
-// True when the request is within the limit. Fails open if the check itself
-// errors, so an outage of the limiter doesn't drop real leads.
-export async function withinRateLimit(bucket: string, max: number, windowSeconds: number) {
-  const { data, error } = await createAdminClient().rpc("hit_rate_limit", {
-    p_bucket: bucket,
-    p_max: max,
-    p_window_seconds: windowSeconds,
-  });
-  if (error) {
-    console.error("Rate limit check failed", error);
-    return true;
-  }
-  return data === true;
-}
-
-export function clientIp(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
-}

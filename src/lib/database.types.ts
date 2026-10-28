@@ -46,6 +46,7 @@ export type Database = {
           id: string
           lead_id: string | null
           org_id: string
+          source: string | null
           type: Database["public"]["Enums"]["activity_type"]
           updated_at: string
         }
@@ -60,6 +61,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           org_id: string
+          source?: string | null
           type: Database["public"]["Enums"]["activity_type"]
           updated_at?: string
         }
@@ -74,6 +76,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           org_id?: string
+          source?: string | null
           type?: Database["public"]["Enums"]["activity_type"]
           updated_at?: string
         }
@@ -471,6 +474,24 @@ export type Database = {
           },
         ]
       }
+      instance_settings: {
+        Row: {
+          allow_multiple_orgs: boolean
+          first_org_created_at: string | null
+          id: boolean
+        }
+        Insert: {
+          allow_multiple_orgs?: boolean
+          first_org_created_at?: string | null
+          id?: boolean
+        }
+        Update: {
+          allow_multiple_orgs?: boolean
+          first_org_created_at?: string | null
+          id?: boolean
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -701,25 +722,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "leads_api_key_id_fkey"
-            columns: ["api_key_id"]
-            isOneToOne: false
-            referencedRelation: "api_keys"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_capture_form_id_fkey"
-            columns: ["capture_form_id"]
-            isOneToOne: false
-            referencedRelation: "capture_forms"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "leads_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_org_id_api_key_id_fkey"
+            columns: ["org_id", "api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "leads_org_id_capture_form_id_fkey"
+            columns: ["org_id", "capture_form_id"]
+            isOneToOne: false
+            referencedRelation: "capture_forms"
+            referencedColumns: ["org_id", "id"]
           },
           {
             foreignKeyName: "leads_org_id_company_id_fkey"
@@ -961,6 +982,7 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      can_create_organization: { Args: never; Returns: boolean }
       can_edit_org_data: { Args: { p_org: string }; Returns: boolean }
       can_see_all_records: { Args: { p_org: string }; Returns: boolean }
       can_view_record: {
@@ -990,6 +1012,8 @@ export type Database = {
         Args: { p_org: string }
         Returns: Database["public"]["Enums"]["org_role"]
       }
+      erase_contact: { Args: { p_contact: string }; Returns: Json }
+      export_org_data: { Args: { p_org: string }; Returns: Json }
       get_invitation: {
         Args: { p_token: string }
         Returns: {
@@ -1017,6 +1041,11 @@ export type Database = {
       is_org_member: { Args: { p_org: string }; Returns: boolean }
       load_sample_data: { Args: { p_org: string }; Returns: undefined }
       next_round_robin_owner: { Args: { p_form: string }; Returns: string }
+      purge_trash: { Args: { p_days?: number }; Returns: Json }
+      rate_limit_ok: {
+        Args: { p_bucket: string; p_max: number; p_window_seconds: number }
+        Returns: boolean
+      }
       remove_member: { Args: { p_membership: string }; Returns: undefined }
       report: {
         Args: {

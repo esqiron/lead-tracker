@@ -15,7 +15,11 @@ Every person belongs to an organization with exactly one role. The rules are enf
 | Load or clear sample data | ✅ | ✅ | | |
 | Create and edit leads, contacts, companies, activities | ✅ | ✅ | ✅ | |
 | Move a record to the trash | ✅ | ✅ | own records | |
-| Permanently delete records | ✅ | ✅ | | |
+| Reassign a record to someone else | ✅ | ✅ | own or unassigned records | |
+| Restore from the trash, delete forever | ✅ | ✅ | | |
+| Erase a contact and their data (GDPR) | ✅ | ✅ | | |
+| Read the security log | ✅ | ✅ | | |
+| Export all organization data (JSON) | ✅ | | | |
 | See all leads and contacts | ✅ | ✅ | depends on org setting | ✅ |
 | Read the audit log | ✅ | ✅ | | |
 
@@ -27,7 +31,10 @@ Every person belongs to an organization with exactly one role. The rules are enf
 
 - Each organization has **exactly one owner**. Admins can't change or remove the owner. The owner hands over the role with `transfer_ownership` and becomes an admin.
 - Nobody can be **invited as owner**.
-- An invitation can be **accepted only by the email address it was sent to**. Invites expire after 7 days. Re-inviting someone replaces the old link.
+- An invitation can be **accepted only by the email address it was sent to**, and only once that address is confirmed. Invites expire after 7 days (set by the database). Re-inviting someone replaces the old link. Pending invites are revoked when the admin who sent them loses admin rights.
+- A self-hosted instance holds **one organization**. The database enforces this, not just the app.
+- The author of a record or note, the organization it belongs to, and what a note is attached to can't be changed after the fact.
+- A lead's won/lost status always follows its stage.
 - Records can't reference another organization's records: composite foreign keys reject it.
 
 ## Joining

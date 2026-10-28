@@ -9,6 +9,8 @@ import { FORM_FIELD_KEYS, isSafeRedirect, readFields, toOrigin, type FormField }
 import { field, type FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import { hashToken } from "@/lib/tokens";
+import { userMessage } from "@/lib/errors";
+import { allowed, TOO_MANY } from "@/lib/rate-limit";
 
 // --- API keys ------------------------------------------------------------------
 
@@ -18,6 +20,7 @@ export async function createApiKey(_: ApiKeyState, formData: FormData): Promise<
   const { org } = await requireSettingsAdmin();
   const name = field(formData, "name");
   if (!name || name.length > 80) return { fieldErrors: { name: "Name the key after where it's used, e.g. “Website” or “Zapier”." } };
+  if (!(await allowed({ key: ["api-key", org.id], max: 20, per: 86400 }))) return { error: TOO_MANY };
 
   const key = `${API_KEY_PREFIX}${randomBytes(24).toString("base64url")}`;
   const supabase = await createClient();
@@ -27,7 +30,7 @@ export async function createApiKey(_: ApiKeyState, formData: FormData): Promise<
     key_prefix: key.slice(0, API_KEY_PREFIX.length + 6),
     key_hash: hashToken(key),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   revalidatePath("/settings/capture");
   return { key, message: `Key “${name}” created.` };
@@ -96,10 +99,10 @@ export async function saveCaptureForm(formId: string | null, _: FormState, formD
   const supabase = await createClient();
   if (formId) {
     const { error } = await supabase.from("capture_forms").update(values).eq("id", formId).eq("org_id", org.id);
-    if (error) return { error: error.message };
+    if (error) return { error: userMessage(error) };
   } else {
     const { error } = await supabase.from("capture_forms").insert({ ...values, org_id: org.id });
-    if (error) return { error: error.message };
+    if (error) return { error: userMessage(error) };
   }
 
   revalidatePath("/settings/capture");
@@ -114,7 +117,7 @@ export async function deleteCaptureForm(formId: string): Promise<FormState> {
   const { org } = await requireSettingsAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("capture_forms").delete().eq("id", formId).eq("org_id", org.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
   revalidatePath("/settings/capture");
   redirect("/settings/capture");
 }

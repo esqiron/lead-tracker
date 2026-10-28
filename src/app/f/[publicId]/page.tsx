@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageSpinner } from "@/components/page-spinner";
 import { Alert, Field, Input, Textarea } from "@/components/ui";
-import { getPublicForm, renderedAt } from "@/lib/capture-forms";
+import { FORM_ERRORS, formToken, getPublicForm, type FormErrorCode } from "@/lib/capture-forms";
 import { param } from "@/lib/forms";
 
 export const metadata: Metadata = { title: "Contact us", robots: { index: false } };
@@ -37,10 +37,11 @@ async function HostedFormContent({ params, searchParams }: PageProps<"/f/[public
     );
   }
 
-  const error = param(sp.error);
+  const code = param(sp.error);
+  const error = code && code in FORM_ERRORS ? FORM_ERRORS[code as FormErrorCode] : null;
   return (
     <form action={`/api/v1/forms/${form.public_id}`} method="post" className="space-y-4">
-      {error ? <Alert>{error.slice(0, 200)}</Alert> : null}
+      {error ? <Alert>{error}</Alert> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         {form.fields.map((field) => (
           <div key={field.key} className={field.key === "message" || field.key === "email" ? "sm:col-span-2" : undefined}>
@@ -74,7 +75,7 @@ async function HostedFormContent({ params, searchParams }: PageProps<"/f/[public
           <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" />
         </label>
       </div>
-      <input type="hidden" name="_t" value={renderedAt()} />
+      <input type="hidden" name="_t" value={formToken(form.public_id)} />
       <button
         type="submit"
         className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"

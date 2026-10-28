@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { canEditRole, requireReadyOrg } from "@/lib/auth";
+import { canEditRole, isAdminRole, requireReadyOrg } from "@/lib/auth";
 import { findOrCreateCompany } from "@/lib/companies";
 import { field, isEmail, type FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
 
 export async function saveContact(contactId: string | null, _: FormState, formData: FormData): Promise<FormState> {
   const { org, role, user } = await requireReadyOrg();
@@ -64,7 +65,22 @@ export async function saveContact(contactId: string | null, _: FormState, formDa
 
 function duplicateOr(error: { code?: string; message: string } | null): FormState {
   if (error?.code === "23505") return { fieldErrors: { email: "Another contact already uses this email." } };
-  return { error: error?.message ?? "Couldn't save the contact." };
+  return { error: userMessage(error, "Couldn't save the contact.") };
+}
+
+// GDPR erasure: removes the contact, their leads and activity, and the audit
+// entries holding their data. Admins only (checked again in erase_contact()).
+export async function eraseContact(contactId: string): Promise<FormState> {
+  const { role } = await requireReadyOrg();
+  if (!isAdminRole(role)) return { error: "Only admins can erase contacts." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("erase_contact", { p_contact: contactId });
+  if (error) return { error: userMessage(error) };
+
+  revalidatePath("/contacts");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+  redirect("/contacts");
 }
 
 export async function trashContact(contactId: string): Promise<FormState> {
@@ -75,7 +91,7 @@ export async function trashContact(contactId: string): Promise<FormState> {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", contactId)
     .eq("org_id", org.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   revalidatePath("/contacts");
   redirect("/contacts");

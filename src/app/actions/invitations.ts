@@ -8,6 +8,9 @@ import { env } from "@/lib/env";
 import { escapeLike, field, isEmail, type FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import { generateToken, hashToken } from "@/lib/tokens";
+import { userMessage } from "@/lib/errors";
+import { allowed, TOO_MANY } from "@/lib/rate-limit";
+import { deploymentMode } from "@/lib/env";
 
 // Invitations are sent from the setup wizard and from Settings → Members.
 
@@ -22,7 +25,7 @@ function revalidateInvitePages() {
   revalidatePath("/settings/members");
 }
 
-export type InviteResult = { email: string; url: string; emailed: boolean };
+export type InviteResult = { email: string; url: string | null; emailed: boolean };
 export type InviteState = FormState & { results?: InviteResult[] };
 
 const INVITABLE_ROLES = ["admin", "member", "viewer"] as const;
@@ -38,6 +41,7 @@ export async function sendInvitations(_: InviteState, formData: FormData): Promi
     .filter((row) => row.email);
 
   if (!rows.length) return { error: "Add at least one email address." };
+  if (rows.length > 20) return { error: "Invite up to 20 people at a time." };
   const invalid = rows.find((row) => !isEmail(row.email));
   if (invalid) return { error: `"${invalid.email}" isn't a valid email address.` };
   if (rows.some((row) => !INVITABLE_ROLES.includes(row.role))) return { error: "Pick a role for everyone." };
@@ -53,7 +57,16 @@ export async function sendInvitations(_: InviteState, formData: FormData): Promi
   const alreadyMember = rows.find((row) => memberEmails.has(row.email));
   if (alreadyMember) return { error: `${alreadyMember.email} is already in ${org.name}.` };
 
+  // Invitations send email: cap them per org so a compromised admin account
+  // can't turn the server into a spam relay.
+  for (let i = 0; i < rows.length; i++) {
+    if (!(await allowed({ key: ["invites", org.id], max: 100, per: 3600 }))) return { error: TOO_MANY };
+  }
+
   const emailEnabled = isEmailConfigured();
+  // A hosted instance always has email: there, the emailed link is what proves
+  // the invitee owns the address.
+  if (!emailEnabled && deploymentMode() === "hosted") return { error: "Email must be set up to invite people." };
   const inviter = user.fullName ?? user.email;
   const results: InviteResult[] = [];
 
@@ -75,7 +88,7 @@ export async function sendInvitations(_: InviteState, formData: FormData): Promi
       token_hash: hashToken(token),
       invited_by: user.id,
     });
-    if (error) return { error: error.message, results };
+    if (error) return { error: userMessage(error), results };
 
     const url = `${env.siteUrl}/invite/${token}`;
     let emailed = false;
@@ -94,7 +107,10 @@ export async function sendInvitations(_: InviteState, formData: FormData): Promi
         console.error("Failed to send invitation email", err);
       }
     }
-    results.push({ email: row.email, url, emailed });
+    // With email set up the link is only ever emailed. That way receiving it
+    // proves the invitee owns the address, and the admin never holds a link
+    // that could create an account for someone else's email.
+    results.push({ email: row.email, url: emailEnabled ? null : url, emailed });
   }
 
   revalidateInvitePages();

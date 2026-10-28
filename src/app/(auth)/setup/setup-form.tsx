@@ -6,13 +6,18 @@ import { Alert, Field, Input } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { MIN_PASSWORD_LENGTH } from "@/lib/forms";
 
-export function SetupForm() {
+export function SetupForm({ needsToken }: { needsToken: boolean }) {
   const [state, action] = useActionState(createFirstOwner, {});
   const errors = state.fieldErrors ?? {};
 
   return (
     <form action={action} className="space-y-4">
       {state.error ? <Alert>{state.error}</Alert> : null}
+      {needsToken ? (
+        <Field label="Setup token" htmlFor="setup_token" error={errors.setup_token} hint="The SETUP_TOKEN value from your deployment's environment.">
+          <Input id="setup_token" name="setup_token" type="password" autoComplete="off" required />
+        </Field>
+      ) : null}
       <Field label="Your name" htmlFor="full_name" error={errors.full_name}>
         <Input id="full_name" name="full_name" autoComplete="name" required autoFocus />
       </Field>

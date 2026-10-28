@@ -6,6 +6,7 @@ import { canEditRole, requireReadyOrg } from "@/lib/auth";
 import { findOrCreateCompany } from "@/lib/companies";
 import { escapeLike, field, isEmail, type FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
 
 export async function moveLead(leadId: string, stageId: string, lostReason?: string): Promise<{ error?: string }> {
   const { org, role } = await requireReadyOrg();
@@ -20,7 +21,7 @@ export async function moveLead(leadId: string, stageId: string, lostReason?: str
     .update({ stage_id: stageId, ...(stage.is_lost ? { lost_reason: lostReason?.trim() || null } : {}) })
     .eq("id", leadId)
     .eq("org_id", org.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
@@ -101,7 +102,7 @@ export async function saveLead(leadId: string | null, _: FormState, formData: Fo
         })
         .select("id")
         .single();
-      if (error || !data) return { error: error?.message ?? "Couldn't create the contact." };
+      if (error || !data) return { error: userMessage(error, "Couldn't create the contact.") };
       contactId = data.id;
     }
   } else if (contactChoice) {
@@ -127,14 +128,14 @@ export async function saveLead(leadId: string | null, _: FormState, formData: Fo
   let id = leadId;
   if (leadId) {
     const { error } = await supabase.from("leads").update(values).eq("id", leadId).eq("org_id", org.id);
-    if (error) return { error: error.message };
+    if (error) return { error: userMessage(error) };
   } else {
     const { data, error } = await supabase
       .from("leads")
       .insert({ ...values, org_id: org.id })
       .select("id")
       .single();
-    if (error || !data) return { error: error?.message ?? "Couldn't create the lead." };
+    if (error || !data) return { error: userMessage(error, "Couldn't create the lead.") };
     id = data.id;
   }
 
@@ -152,7 +153,7 @@ export async function trashLead(leadId: string): Promise<FormState> {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", leadId)
     .eq("org_id", org.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   revalidatePath("/leads");
   revalidatePath("/dashboard");

@@ -1,13 +1,17 @@
-import { captureLead, clientIp, notifyLeadOwner, validateCapture, withinRateLimit } from "@/lib/capture";
-import { getPublicForm, isSafeRedirect, siteOrigin, toOrigin } from "@/lib/capture-forms";
+import { captureLead, notifyLeadOwner, validateCapture } from "@/lib/capture";
+import { checkFormToken, FORM_ERRORS, getPublicForm, isSafeRedirect, siteOrigin, toOrigin, type FormErrorCode } from "@/lib/capture-forms";
+import { clientIp, withinRateLimit } from "@/lib/rate-limit";
 
 // Submissions for hosted forms. Accepts a normal HTML form post (answers with a
 // redirect) or JSON via fetch (answers with JSON and CORS headers).
 
+const MAX_BODY_BYTES = 64 * 1024;
+
 type Form = NonNullable<Awaited<ReturnType<typeof getPublicForm>>>;
 
 // The form's own page is always allowed. With no allowed origins configured,
-// any site may post (handy for testing; restrict it in Settings).
+// any site may post. This stops other sites embedding the form; it is not
+// spam protection (scripts can omit the Origin header).
 function originAllowed(form: Form, origin: string | null) {
   if (!origin) return true;
   if (origin === siteOrigin()) return true;
@@ -36,18 +40,35 @@ export async function POST(request: Request, ctx: RouteContext<"/api/v1/forms/[p
   const form = await getPublicForm(publicId);
   const formPage = new URL(`/f/${publicId}`, siteOrigin());
 
-  const respond = (ok: boolean, message: string, status: number) => {
+  const respond = (ok: boolean, code: FormErrorCode | null, status: number) => {
     if (wantsJson) {
-      return Response.json(ok ? { ok: true } : { ok: false, error: message }, { status, headers: corsHeaders(form && originAllowed(form, origin) ? origin : null) });
+      return Response.json(ok ? { ok: true } : { ok: false, error: code ? FORM_ERRORS[code] : "" }, {
+        status,
+        headers: corsHeaders(form && originAllowed(form, origin) ? origin : null),
+      });
     }
     if (ok && form && isSafeRedirect(form.redirect_url)) return Response.redirect(form.redirect_url, 303);
     const target = new URL(formPage);
-    target.searchParams.set(ok ? "sent" : "error", ok ? "1" : message);
+    if (ok) target.searchParams.set("sent", "1");
+    else if (code) target.searchParams.set("error", code);
     return Response.redirect(target, 303);
   };
 
-  if (!form) return respond(false, "This form isn't available.", 404);
-  if (!originAllowed(form, origin)) return respond(false, "This site isn't allowed to use this form.", 403);
+  if (!form) return respond(false, "unavailable", 404);
+  if (!originAllowed(form, origin)) return respond(false, "origin", 403);
+
+  // Size check before reading anything.
+  const length = Number(request.headers.get("content-length"));
+  if (!length || length > MAX_BODY_BYTES) return respond(false, length ? "too_large" : "unreadable", length ? 413 : 411);
+
+  // Limits come before parsing, and fail closed: anonymous traffic shouldn't
+  // be able to switch them off by overloading the limiter.
+  const ip = clientIp(request);
+  const limited =
+    !(await withinRateLimit(["form-ip-m", form.id, ip], 5, 60, { failClosed: true })) ||
+    !(await withinRateLimit(["form-ip-h", form.id, ip], 30, 3600, { failClosed: true })) ||
+    !(await withinRateLimit(["form-h", form.id], 500, 3600, { failClosed: true }));
+  if (limited) return respond(false, "rate", 429);
 
   let raw: Record<string, unknown>;
   try {
@@ -55,47 +76,42 @@ export async function POST(request: Request, ctx: RouteContext<"/api/v1/forms/[p
       ? ((await request.json()) as Record<string, unknown>)
       : Object.fromEntries([...(await request.formData()).entries()].filter(([, v]) => typeof v === "string"));
   } catch {
-    return respond(false, "The submission couldn't be read.", 400);
+    return respond(false, "unreadable", 400);
   }
-  if (!raw || typeof raw !== "object") return respond(false, "The submission couldn't be read.", 400);
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return respond(false, "unreadable", 400);
 
-  // Bots: a filled hidden field, or a submit faster than a person could type.
-  // They get a normal-looking success so they don't adapt.
-  const renderedAt = Number(raw._t);
-  if ((typeof raw._gotcha === "string" && raw._gotcha) || (renderedAt && Date.now() - renderedAt < 2000)) {
-    return respond(true, "", 200);
+  // Bots: a filled hidden field, or a forged/too-fast render token. They get a
+  // normal-looking success so they don't adapt.
+  if ((typeof raw._gotcha === "string" && raw._gotcha) || checkFormToken(form.public_id, raw._t) === "bot") {
+    return respond(true, null, 200);
   }
-
-  const ip = clientIp(request);
-  const allowed =
-    (await withinRateLimit(`form:${form.id}:${ip}:m`, 5, 60)) &&
-    (await withinRateLimit(`form:${form.id}:${ip}:h`, 30, 3600)) &&
-    (await withinRateLimit(`form:${form.id}:h`, 500, 3600));
-  if (!allowed) return respond(false, "Too many submissions. Please try again in a few minutes.", 429);
 
   // Only the fields this form shows are accepted, so visitors can't set the
   // owner, stage, value or source.
   const picked: Record<string, unknown> = {};
   for (const field of form.fields) {
     const value = typeof raw[field.key] === "string" ? (raw[field.key] as string).trim() : "";
-    if (field.required && !value) return respond(false, `${field.label} is required.`, 422);
+    if (field.required && !value) return respond(false, "required", 422);
     if (value) picked[field.key] = value;
   }
   if (form.consent_text) {
     const consent = raw.consent === true || (typeof raw.consent === "string" && ["on", "true", "yes", "1"].includes(raw.consent.toLowerCase()));
-    if (!consent) return respond(false, "Please accept the consent statement.", 422);
+    if (!consent) return respond(false, "consent", 422);
     picked.consent = true;
   }
 
   const validated = validateCapture(picked);
-  if ("errors" in validated) return respond(false, Object.values(validated.errors)[0] ?? "Check the form and try again.", 422);
+  if ("errors" in validated) return respond(false, "invalid", 422);
 
   try {
     const result = await captureLead(form.org_id, validated.data, { formId: form.id });
-    if (form.notify_owner) await notifyLeadOwner(form.org_id, result, validated.data, `the “${form.name}” form`);
-    return respond(true, "", 200);
+    // At most 30 notification emails per form per hour.
+    if (form.notify_owner && (await withinRateLimit(["form-notify", form.id], 30, 3600))) {
+      await notifyLeadOwner(form.org_id, result, validated.data, `the “${form.name}” form`);
+    }
+    return respond(true, null, 200);
   } catch (err) {
     console.error("Form lead capture failed", err);
-    return respond(false, "Something went wrong. Please try again.", 500);
+    return respond(false, "failed", 500);
   }
 }

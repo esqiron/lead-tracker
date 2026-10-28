@@ -5,6 +5,7 @@ import { canEditRole, requireReadyOrg } from "@/lib/auth";
 import { field, type FormState } from "@/lib/forms";
 import { zonedToISO } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
 
 const TYPES = ["note", "call", "email", "meeting", "task"] as const;
 
@@ -38,7 +39,7 @@ export async function addActivity(_: FormState, formData: FormData): Promise<For
     due_at: type === "task" && due ? zonedToISO(due, org.timezone) : null,
     assigned_to: type === "task" ? field(formData, "assigned_to") || user.id : null,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   revalidateRecordPath(field(formData, "path"));
   return { message: "saved" };

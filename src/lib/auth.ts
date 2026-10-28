@@ -3,8 +3,6 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { deploymentMode } from "@/lib/env";
 import { resumeStep, stepIndex, type WizardStep } from "@/lib/onboarding";
 import type { Database } from "@/lib/database.types";
 
@@ -84,12 +82,12 @@ export async function instanceInitialized() {
 
 // A self-hosted instance runs one organization. Once it exists, people
 // without a membership need an invite rather than creating their own.
+// Decided by the database (public.instance_settings): a self-hosted instance
+// gets one organization, ever; hosted operators allow more.
 export async function canCreateOrganization() {
-  if (deploymentMode() === "hosted") return true;
-  const { count } = await createAdminClient()
-    .from("organizations")
-    .select("id", { count: "exact", head: true });
-  return (count ?? 0) === 0;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("can_create_organization");
+  return data === true;
 }
 
 export async function homePath(ctx: Context | null): Promise<string> {

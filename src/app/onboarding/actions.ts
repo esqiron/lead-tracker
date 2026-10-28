@@ -13,6 +13,7 @@ import {
 import { field, type FormState } from "@/lib/forms";
 import { nextStep, stepIndex, type WizardStep } from "@/lib/onboarding";
 import { saveLeadSources, savePipelineStages } from "@/lib/pipeline-config";
+import { userMessage } from "@/lib/errors";
 
 async function requireAdminOrg() {
   const ctx = await getContext();
@@ -54,7 +55,7 @@ export async function saveOrganization(_: FormState, formData: FormData): Promis
       .from("organizations")
       .update({ name, currency, timezone, date_format: dateFormat })
       .eq("id", ctx.org.id);
-    if (error) return { error: error.message };
+    if (error) return { error: userMessage(error) };
   } else {
     if (!(await canCreateOrganization())) redirect("/no-access");
     const { data: orgId, error } = await supabase.rpc("create_organization", {
@@ -63,7 +64,7 @@ export async function saveOrganization(_: FormState, formData: FormData): Promis
       p_timezone: timezone,
       p_date_format: dateFormat,
     });
-    if (error || !orgId) return { error: error?.message ?? "Couldn't create the organization." };
+    if (error || !orgId) return { error: userMessage(error, "Couldn't create the organization.") };
     await setActiveOrg(orgId);
   }
 

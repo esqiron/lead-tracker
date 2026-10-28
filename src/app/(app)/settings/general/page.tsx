@@ -5,6 +5,7 @@ import { requireSettingsAdmin } from "@/lib/auth";
 import { timezones } from "@/lib/org-options";
 import { SettingsSection } from "../settings-section";
 import { DeleteOrganizationCard, OrgSettingsForm } from "./org-settings-form";
+import { buttonClass } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Organization settings" };
 
@@ -25,6 +26,16 @@ async function GeneralSettingsContent() {
           }}
         />
       </SettingsSection>
+      {role === "owner" ? (
+        <SettingsSection
+          title="Export all data"
+          description="Download everything this organization holds as one JSON file: contacts, leads, activity, settings, members and the audit log. Secrets are left out."
+        >
+          <a href="/settings/general/export" download className={buttonClass("secondary")}>
+            Download export
+          </a>
+        </SettingsSection>
+      ) : null}
       {role === "owner" ? <DeleteOrganizationCard orgName={org.name} /> : null}
     </div>
   );

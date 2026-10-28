@@ -2,6 +2,8 @@ import type { NextRequest } from "next/server";
 import { csvResponse, EXPORT_LIMIT, requireExportAccess } from "@/lib/csv-response";
 import { applyContactFilters, readContactFilters } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
+import { logEvent } from "@/lib/audit";
 
 // CSV of the contacts list, with the same filters as the page. The column
 // names match the importer, so an export can be re-imported elsewhere.
@@ -27,7 +29,8 @@ export async function GET(request: NextRequest) {
   )
     .order("created_at")
     .limit(EXPORT_LIMIT);
-  if (error) return new Response(error.message, { status: 500 });
+  if (error) return new Response(userMessage(error, "The export failed."), { status: 500 });
+  await logEvent({ orgId: org.id, actorId: user.id, action: "export", entity: "contacts", details: { rows: data?.length ?? 0, filters } });
 
   return csvResponse(
     "contacts",

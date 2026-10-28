@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { escapeLike } from "@/lib/forms";
+import { userMessage } from "@/lib/errors";
 
 // Companies are created implicitly from a typed name: reuse a match
 // (case-insensitive) or add a new one.
@@ -26,5 +27,5 @@ export async function findOrCreateCompany(
     .insert({ org_id: orgId, name, owner_id: ownerId })
     .select("id")
     .single();
-  return data ?? { error: error?.message ?? "Couldn't save the company." };
+  return data ?? { error: userMessage(error, "Couldn't save the company.") };
 }

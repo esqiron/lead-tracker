@@ -63,6 +63,10 @@ Details in [docs/roles.md](docs/roles.md).
 - **No public signup.** The first person to open a fresh install becomes the owner. Everyone else joins through an invite link, which creates their account already confirmed.
 - **Email is optional.** Without SMTP, the wizard gives admins invite links to share themselves. Password resets need SMTP ([docs/email-setup.md](docs/email-setup.md)).
 
+## Security
+
+Access rules live in the database (Row Level Security) and are covered by attack-replay tests. Self-hosters: read the [security model](docs/security.md) and work through the [hardening checklist](docs/self-hosting.md#hardening-checklist). Report vulnerabilities privately; see [SECURITY.md](SECURITY.md).
+
 ## Project layout
 
 ```

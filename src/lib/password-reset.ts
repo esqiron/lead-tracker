@@ -12,6 +12,5 @@ export async function createPasswordResetLink(email: string): Promise<string | n
   const url = new URL("/auth/confirm", env.siteUrl);
   url.searchParams.set("token_hash", tokenHash);
   url.searchParams.set("type", "recovery");
-  url.searchParams.set("next", "/reset-password");
   return url.toString();
 }

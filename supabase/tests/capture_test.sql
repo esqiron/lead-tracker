@@ -1,7 +1,10 @@
 -- Inbound capture functions. Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(20);
+
+-- These tests create several organizations, like a hosted instance.
+update public.instance_settings set allow_multiple_orgs = true, first_org_created_at = null;
 
 -- Runs SQL as a database role (and optional JWT subject), then switches back.
 create schema tests;
@@ -58,7 +61,7 @@ reset role;
 select is((current_setting('test.r1')::jsonb ->> 'contact_created')::boolean, true, 'creates a new contact');
 select is((select email from public.contacts where id = (current_setting('test.r1')::jsonb ->> 'contact_id')::uuid), 'ana@example.com', 'email is stored lowercased');
 select is((select s.name from public.leads l join public.pipeline_stages s on s.id = l.stage_id where l.id = (current_setting('test.r1')::jsonb ->> 'lead_id')::uuid), 'Qualified', 'stage is matched by name, case-insensitively');
-select is((select count(*)::int from public.lead_sources where org_id = current_setting('test.org')::uuid and name = 'Webinar'), 1, 'an unknown source is created');
+select is((select count(*)::int from public.lead_sources where org_id = current_setting('test.org')::uuid and name = 'Webinar'), 0, 'unknown sources are not created from outside');
 select is((select count(*)::int from public.companies where org_id = current_setting('test.org')::uuid and name = 'Northwind'), 1, 'the company is created');
 select is((select body from public.activities where lead_id = (current_setting('test.r1')::jsonb ->> 'lead_id')::uuid), 'Hi there', 'the message is saved as a note');
 select is((current_setting('test.r1')::jsonb ->> 'owner_id')::uuid, '11111111-1111-1111-1111-111111111111'::uuid, 'without a form, the org owner gets the lead');
@@ -72,8 +75,8 @@ select set_config('test.r2', public.capture_lead(
 reset role;
 
 select is(current_setting('test.r2')::jsonb ->> 'contact_id', current_setting('test.r1')::jsonb ->> 'contact_id', 'an existing contact is reused by email');
-select is((select first_name || '|' || phone from public.contacts where id = (current_setting('test.r2')::jsonb ->> 'contact_id')::uuid), 'Ana|+40 700', 'existing values are kept, empty ones filled');
-select is((select array_to_string(tags, ',') from public.contacts where id = (current_setting('test.r2')::jsonb ->> 'contact_id')::uuid), 'newsletter,vip', 'tags are merged');
+select is((select first_name || '|' || coalesce(phone, '-') from public.contacts where id = (current_setting('test.r2')::jsonb ->> 'contact_id')::uuid), 'Ana|-', 'an existing contact is never modified by capture');
+select is((select array_to_string(tags, ',') from public.contacts where id = (current_setting('test.r2')::jsonb ->> 'contact_id')::uuid), 'vip', 'tags of an existing contact are not changed');
 select is((select s.name from public.leads l join public.pipeline_stages s on s.id = l.stage_id where l.id = (current_setting('test.r2')::jsonb ->> 'lead_id')::uuid), 'New', 'an unknown stage falls back to the first open stage');
 select is((current_setting('test.r2')::jsonb ->> 'owner_id')::uuid, '33333333-3333-3333-3333-333333333333'::uuid, 'owner_email assigns the lead to that member');
 
@@ -97,6 +100,15 @@ select is(
   (select consent_text || '|' || consent_source from public.contacts where id = (current_setting('test.r3')::jsonb ->> 'contact_id')::uuid),
   'I agree.|form:' || (select public_id from public.capture_forms where id = 'ffffffff-0000-0000-0000-000000000001'),
   'consent text and form are recorded on the contact');
+
+-- Won/lost stages and viewers can't be targeted from outside
+insert into auth.users (id, email, aud, role) values ('44444444-4444-4444-4444-444444444444', 'viewer@test.local', 'authenticated', 'authenticated');
+insert into public.memberships (org_id, user_id, role) values (current_setting('test.org')::uuid, '44444444-4444-4444-4444-444444444444', 'viewer');
+set local role service_role;
+select set_config('test.r4', public.capture_lead(current_setting('test.org')::uuid, '{"email":"x4@test.local","stage":"Won","owner_email":"viewer@test.local","message":"hello"}')::text, true);
+reset role;
+select is((select s.name from public.leads l join public.pipeline_stages s on s.id = l.stage_id where l.id = (current_setting('test.r4')::jsonb ->> 'lead_id')::uuid), 'New', 'capture cannot put a lead straight into Won');
+select isnt((current_setting('test.r4')::jsonb ->> 'owner_id')::uuid, '44444444-4444-4444-4444-444444444444'::uuid, 'capture cannot assign leads to a viewer');
 
 -- Rate limiting
 set local role service_role;

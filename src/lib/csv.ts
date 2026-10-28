@@ -67,7 +67,7 @@ function escapeCell(value: unknown) {
   if (value === null || value === undefined) return "";
   let text = Array.isArray(value) ? value.join("; ") : String(value);
   if (FORMULA_START.test(text)) text = `'${text}`;
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  return /[",;\t\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 export function toCsv(header: string[], rows: unknown[][]) {

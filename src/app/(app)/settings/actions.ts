@@ -11,6 +11,9 @@ import { field, validatePassword, type FormState } from "@/lib/forms";
 import { createPasswordResetLink } from "@/lib/password-reset";
 import { saveLeadSources, savePipelineStages } from "@/lib/pipeline-config";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
+import { allowed, TOO_MANY } from "@/lib/rate-limit";
+import { logEvent } from "@/lib/audit";
 
 // --- Organization -------------------------------------------------------------
 
@@ -37,7 +40,7 @@ export async function updateOrganization(_: FormState, formData: FormData): Prom
       lead_visibility: visibility as "all" | "own",
     })
     .eq("id", org.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   revalidatePath("/", "layout");
   return { message: "Saved." };
@@ -50,7 +53,7 @@ export async function deleteOrganization(_: FormState, formData: FormData): Prom
 
   const supabase = await createClient();
   const { error } = await supabase.from("organizations").delete().eq("id", org.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   (await cookies()).delete(ORG_COOKIE);
   redirect("/");
@@ -82,7 +85,7 @@ export async function changeMemberRole(membershipId: string, role: string): Prom
   if (role !== "admin" && role !== "member" && role !== "viewer") return { error: "Pick a role." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("update_member_role", { p_membership: membershipId, p_role: role });
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
   revalidatePath("/settings/members");
   return {};
 }
@@ -92,7 +95,7 @@ export async function removeMember(membershipId: string): Promise<FormState> {
   const supabase = await createClient();
   const { data: membership } = await supabase.from("memberships").select("user_id").eq("id", membershipId).maybeSingle();
   const { error } = await supabase.rpc("remove_member", { p_membership: membershipId });
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
 
   // Leaving yourself: go wherever is next for you (another org, or no access).
   if (membership?.user_id === user.id) {
@@ -111,7 +114,7 @@ export async function transferOwnership(_: FormState, formData: FormData): Promi
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("transfer_ownership", { p_org: org.id, p_new_owner: newOwner });
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
   revalidatePath("/settings", "layout");
   return { message: "Ownership transferred. You're now an admin." };
 }
@@ -132,9 +135,13 @@ export async function sendMemberPasswordReset(userId: string): Promise<ResetStat
     .maybeSingle();
   if (!member) return { error: "That person isn't in this organization." };
   if (member.role === "owner" && ctx.role !== "owner") return { error: "Only the owner can reset the owner's password." };
+  if (!(await allowed({ key: ["member-reset", userId], max: 3, per: 3600 }, { key: ["member-reset-org", ctx.org.id], max: 20, per: 3600 }))) {
+    return { error: TOO_MANY };
+  }
 
   const email = member.profiles.email;
   const url = await createPasswordResetLink(email);
+  await logEvent({ orgId: ctx.org.id, actorId: ctx.user.id, action: "password_reset", entity: "profiles", entityId: userId, details: { emailed: isEmailConfigured() } });
   if (!url) return { error: "Couldn't create a reset link." };
 
   if (isEmailConfigured()) {
@@ -163,7 +170,7 @@ export async function updateProfile(_: FormState, formData: FormData): Promise<F
 
   const supabase = await createClient();
   const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", user.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error) };
   revalidatePath("/", "layout");
   return { message: "Saved." };
 }
@@ -174,6 +181,7 @@ export async function changePassword(_: FormState, formData: FormData): Promise<
   const next = String(formData.get("password") ?? "");
   const nextError = validatePassword(next, String(formData.get("confirm_password") ?? ""));
   if (nextError) return { fieldErrors: { password: nextError } };
+  if (!(await allowed({ key: ["change-password", user.id], max: 5, per: 900 }))) return { error: TOO_MANY };
 
   // Check the current password on a throwaway client so the session in
   // cookies isn't touched if it's wrong.
@@ -186,6 +194,8 @@ export async function changePassword(_: FormState, formData: FormData): Promise<
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: next });
+  // Supabase Auth's messages (e.g. "should be different") are written for users.
   if (error) return { error: error.message };
-  return { message: "Password changed." };
+  await supabase.auth.signOut({ scope: "others" });
+  return { message: "Password changed. Other devices have been signed out." };
 }

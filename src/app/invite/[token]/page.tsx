@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 import { AcceptInvitationForm, CreateAccountAndAcceptForm, SignInAndAcceptForm } from "./invite-forms";
+import { escapeLike } from "@/lib/forms";
 
 export const metadata: Metadata = { title: "Invitation" };
 
@@ -20,11 +21,10 @@ const STATUS_MESSAGES: Record<string, string> = {
 };
 
 async function accountExists(email: string) {
-  const pattern = email.replace(/[\\%_]/g, (c) => `\\${c}`);
   const { count } = await createAdminClient()
     .from("profiles")
     .select("id", { count: "exact", head: true })
-    .ilike("email", pattern);
+    .ilike("email", escapeLike(email));
   return (count ?? 0) > 0;
 }
 

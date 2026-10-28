@@ -8,6 +8,8 @@ import { IMPORT_BATCH_SIZE, type ImportRow } from "@/lib/import-fields";
 import { parseAmount, parseDay, parseTags, splitName } from "@/lib/import-parse";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/database.types";
+import { userMessage } from "@/lib/errors";
+import { logEvent } from "@/lib/audit";
 
 export type ImportOptions = { updateExisting: boolean };
 export type BatchResult = {
@@ -133,7 +135,7 @@ export async function importBatch(rows: { row: number; data: ImportRow }[], opti
     .map((name) => ({ id: randomUUID(), org_id: org.id, name, owner_id: user.id }));
   if (newCompanies.length) {
     const { error } = await supabase.from("companies").insert(newCompanies);
-    if (error) return { error: `Couldn't create companies: ${error.message}` };
+    if (error) return { error: `Couldn't create companies: ${userMessage(error)}` };
     for (const c of newCompanies) companyId.set(c.name.toLowerCase(), c.id);
   }
 
@@ -168,7 +170,7 @@ export async function importBatch(rows: { row: number; data: ImportRow }[], opti
         continue;
       }
       const { error } = await supabase.from("contacts").update(patch).eq("id", match.id);
-      if (error) result.errors.push({ row: c.row, message: error.message });
+      if (error) result.errors.push({ row: c.row, message: userMessage(error) });
       else result.updated++;
       continue;
     }
@@ -201,7 +203,7 @@ export async function importBatch(rows: { row: number; data: ImportRow }[], opti
         const { error: rowError } = await supabase.from("contacts").insert(i.values);
         if (rowError) {
           contactIdForRow.delete(i.row);
-          result.errors.push({ row: i.row, message: rowError.code === "23505" ? "A contact with this email already exists." : rowError.message });
+          result.errors.push({ row: i.row, message: rowError.code === "23505" ? "A contact with this email already exists." : userMessage(rowError) });
         } else {
           result.created++;
         }
@@ -243,7 +245,7 @@ export async function importBatch(rows: { row: number; data: ImportRow }[], opti
       .map((name) => ({ id: randomUUID(), org_id: org.id, name, position: nextPosition++ }));
     if (newSources.length) {
       const { error } = await supabase.from("lead_sources").insert(newSources);
-      if (error) return { error: `Couldn't create lead sources: ${error.message}` };
+      if (error) return { error: `Couldn't create lead sources: ${userMessage(error)}` };
       for (const s of newSources) sourceId.set(s.name.toLowerCase(), s.id);
       note(`Added new lead source${newSources.length > 1 ? "s" : ""}: ${newSources.map((s) => s.name).join(", ")}.`);
     }
@@ -278,7 +280,7 @@ export async function importBatch(rows: { row: number; data: ImportRow }[], opti
     if (error) {
       for (const l of leadRows) {
         const { error: rowError } = await supabase.from("leads").insert(l.values);
-        if (rowError) result.errors.push({ row: l.row, message: `Lead not created: ${rowError.message}` });
+        if (rowError) result.errors.push({ row: l.row, message: `Lead not created: ${userMessage(rowError)}` });
         else result.leads++;
       }
     } else {
@@ -286,6 +288,13 @@ export async function importBatch(rows: { row: number; data: ImportRow }[], opti
     }
   }
 
+  await logEvent({
+    orgId: org.id,
+    actorId: user.id,
+    action: "import",
+    entity: "contacts",
+    details: { rows: rows.length, created: result.created, updated: result.updated, leads: result.leads, skipped: result.errors.length },
+  });
   revalidatePath("/contacts");
   revalidatePath("/leads");
   revalidatePath("/dashboard");

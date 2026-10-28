@@ -1,16 +1,18 @@
 import type { NextRequest } from "next/server";
 import { csvResponse, requireExportAccess } from "@/lib/csv-response";
 import { bucketLabel, getReport, readReportFilters, winRate } from "@/lib/reports";
+import { logEvent } from "@/lib/audit";
 
 // CSV for one report section, with the same period and filters as the page.
 export async function GET(request: NextRequest) {
   const access = await requireExportAccess();
   if ("error" in access) return access.error;
-  const { org } = access.ctx;
+  const { org, user } = access.ctx;
 
   const sp = Object.fromEntries(request.nextUrl.searchParams);
   const filters = readReportFilters(sp, org.timezone);
   const report = await getReport(org.id, filters);
+  await logEvent({ orgId: org.id, actorId: user.id, action: "export", entity: "report", details: { section: sp.section, from: filters.from, to: filters.to } });
   const name = (section: string) => `report-${section}-${filters.from}-to-${filters.to}`;
   const rate = (won: number, lost: number) => {
     const r = winRate(won, lost);

@@ -22,7 +22,7 @@ export function InviteForm({ emailEnabled }: { emailEnabled: boolean }) {
   return (
     <div className="space-y-4">
       {state.error ? <Alert>{state.error}</Alert> : null}
-      {state.results?.length ? <InviteResults results={state.results} emailEnabled={emailEnabled} /> : null}
+      {state.results?.length ? <InviteResults results={state.results} /> : null}
 
       <form action={action} className="space-y-3">
         <ul className="space-y-2">
@@ -65,8 +65,9 @@ export function InviteForm({ emailEnabled }: { emailEnabled: boolean }) {
   );
 }
 
-function InviteResults({ results, emailEnabled }: { results: NonNullable<InviteState["results"]>; emailEnabled: boolean }) {
-  const needLinks = results.filter((r) => !r.emailed);
+function InviteResults({ results }: { results: NonNullable<InviteState["results"]> }) {
+  const needLinks = results.filter((r) => !r.emailed && r.url);
+  const failed = results.filter((r) => !r.emailed && !r.url);
   const sent = results.filter((r) => r.emailed);
 
   return (
@@ -76,18 +77,21 @@ function InviteResults({ results, emailEnabled }: { results: NonNullable<InviteS
           Invitation{sent.length > 1 ? "s" : ""} sent to {sent.map((r) => r.email).join(", ")}.
         </Alert>
       ) : null}
+      {failed.length ? (
+        <Alert>
+          Couldn&apos;t send the invitation to {failed.map((r) => r.email).join(", ")}. Check the SMTP settings, then invite again.
+        </Alert>
+      ) : null}
       {needLinks.length ? (
         <Alert tone="info">
           <p className="mb-2">
-            {emailEnabled
-              ? "Some emails couldn't be sent. Share these links instead:"
-              : "Share each link with the person it's for. You won't see these links again:"}
+            Share each link with the person it&apos;s for, and only with them. You won&apos;t see these links again:
           </p>
           <ul className="space-y-2">
             {needLinks.map((r) => (
               <li key={r.email}>
                 <p className="font-medium">{r.email}</p>
-                <CopyField value={r.url} />
+                <CopyField value={r.url!} label="Invite link" />
               </li>
             ))}
           </ul>

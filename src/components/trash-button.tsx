@@ -5,7 +5,15 @@ import { Alert } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/forms";
 
-export function TrashButton({ action, confirmText }: { action: () => Promise<FormState>; confirmText: string }) {
+export function TrashButton({
+  action,
+  confirmText,
+  label = "Delete",
+}: {
+  action: () => Promise<FormState>;
+  confirmText: string;
+  label?: string;
+}) {
   const [state, formAction] = useActionState(action, {});
   return (
     <form
@@ -15,8 +23,8 @@ export function TrashButton({ action, confirmText }: { action: () => Promise<For
       }}
       className="contents"
     >
-      <SubmitButton variant="danger" pendingLabel="Deleting…">
-        Delete
+      <SubmitButton variant="danger" pendingLabel="Working…">
+        {label}
       </SubmitButton>
       {state.error ? (
         <div className="basis-full">

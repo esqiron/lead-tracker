@@ -3,6 +3,9 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(22);
 
+-- These tests create several organizations, like a hosted instance.
+update public.instance_settings set allow_multiple_orgs = true, first_org_created_at = null;
+
 -- Runs SQL as a given user (authenticated role + JWT sub), then switches back.
 create schema tests;
 create function tests.as_user(p_uid uuid, p_sql text) returns void
@@ -120,8 +123,8 @@ select throws_ok(
   '23503', null, 'a lead cannot point at another org''s contact');
 
 -- Invitations
-insert into public.invitations (org_id, email, role, token_hash)
-values (current_setting('test.org')::uuid, 'invitee@test.local', 'member', encode(sha256(convert_to('tok-123', 'UTF8')), 'hex'));
+insert into public.invitations (org_id, email, role, token_hash, invited_by)
+values (current_setting('test.org')::uuid, 'invitee@test.local', 'member', encode(sha256(convert_to('tok-123', 'UTF8')), 'hex'), '11111111-1111-1111-1111-111111111111');
 select throws_ok(
   $$select tests.as_user('55555555-5555-5555-5555-555555555555', 'select public.accept_invitation(''tok-123'')')$$,
   '42501', null, 'an invitation only works for the invited email');

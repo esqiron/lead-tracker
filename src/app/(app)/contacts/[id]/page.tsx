@@ -12,7 +12,7 @@ import { canEditRole, canTrashRecord, isAdminRole, requireReadyOrg } from "@/lib
 import { getMembers, getStages } from "@/lib/crm";
 import { contactName, formatDate, formatMoney, initials, personName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { trashContact } from "../actions";
+import { eraseContact, trashContact } from "../actions";
 
 export const metadata: Metadata = { title: "Contact" };
 
@@ -86,6 +86,13 @@ async function ContactPageContent({ params }: PageProps<"/contacts/[id]">) {
               </Link>
               {canTrashRecord(ctx, contact.owner_id) ? (
                 <TrashButton action={trashContact.bind(null, contact.id)} confirmText={`Delete ${name}? Their leads are kept.`} />
+              ) : null}
+              {isAdminRole(ctx.role) ? (
+                <TrashButton
+                  action={eraseContact.bind(null, contact.id)}
+                  label="Erase…"
+                  confirmText={`Permanently erase ${name}, their ${leadList.length} lead${leadList.length === 1 ? "" : "s"} and all activity, including history in the audit log? This can't be undone. Use it for data deletion (GDPR) requests.`}
+                />
               ) : null}
             </div>
           ) : null}

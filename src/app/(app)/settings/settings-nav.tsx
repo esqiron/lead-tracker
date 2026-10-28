@@ -11,6 +11,8 @@ const LINKS = [
   { href: "/settings/pipeline", label: "Pipeline", admin: true },
   { href: "/settings/sources", label: "Lead sources", admin: true },
   { href: "/settings/capture", label: "Lead capture", admin: true },
+  { href: "/settings/trash", label: "Trash", admin: true },
+  { href: "/settings/security-log", label: "Security log", admin: true },
 ];
 
 export function SettingsNav({ isAdmin }: { isAdmin: boolean }) {

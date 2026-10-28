@@ -10,8 +10,18 @@ export function field(formData: FormData, name: string) {
 }
 
 // Only allow same-site relative redirects.
+// Only allow same-site relative redirects. Parsed with the URL parser (which
+// treats "\" like "/" and drops tabs/newlines, as browsers do) so tricks such
+// as "/\evil.com" can't send people to another site.
 export function safeNext(next: string | null | undefined, fallback = "/") {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
+  if (!next || !next.startsWith("/") || /[\\\u0000-\u001f\u007f]/.test(next)) return fallback;
+  try {
+    const base = "http://same.invalid";
+    const url = new URL(next, base);
+    return url.origin === base ? `${url.pathname}${url.search}${url.hash}` : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export const MIN_PASSWORD_LENGTH = 8;
@@ -30,8 +40,9 @@ export function isEmail(value: string) {
 }
 
 // For PostgREST ilike patterns.
+// PostgREST also treats * as a wildcard in like/ilike.
 export function escapeLike(value: string) {
-  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
+  return value.replace(/[\\%_*]/g, (c) => `\\${c}`);
 }
 
 // Search terms end up inside PostgREST filter strings (e.g. `or=(...)`), where

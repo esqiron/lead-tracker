@@ -3,6 +3,8 @@ import { csvResponse, EXPORT_LIMIT, requireExportAccess } from "@/lib/csv-respon
 import { getStages } from "@/lib/crm";
 import { applyLeadFilters, readLeadFilters } from "@/lib/list-filters";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
+import { logEvent } from "@/lib/audit";
 
 // CSV of the leads list, with the same filters as the page.
 export async function GET(request: NextRequest) {
@@ -29,8 +31,9 @@ export async function GET(request: NextRequest) {
     { status: true },
   );
   const [{ data, error }, stages] = await Promise.all([query.order("created_at").limit(EXPORT_LIMIT), getStages(org.id)]);
-  if (error) return new Response(error.message, { status: 500 });
+  if (error) return new Response(userMessage(error, "The export failed."), { status: 500 });
 
+  await logEvent({ orgId: org.id, actorId: user.id, action: "export", entity: "leads", details: { rows: data?.length ?? 0, filters } });
   const stageName = new Map(stages.map((s) => [s.id, s.name]));
   return csvResponse(
     "leads",

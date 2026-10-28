@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
 
 // Validation + save for the pipeline and lead source editors, shared by the
 // setup wizard and Settings. Each returns an error message, or null on success.
@@ -28,7 +29,7 @@ export async function savePipelineStages(orgId: string, raw: string): Promise<st
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("save_pipeline_stages", { p_org: orgId, p_stages: stages });
-  return error?.message ?? null;
+  return error ? userMessage(error) : null;
 }
 
 export async function saveLeadSources(orgId: string, raw: string): Promise<string | null> {
@@ -50,5 +51,5 @@ export async function saveLeadSources(orgId: string, raw: string): Promise<strin
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("save_lead_sources", { p_org: orgId, p_sources: sources });
-  return error?.message ?? null;
+  return error ? userMessage(error) : null;
 }

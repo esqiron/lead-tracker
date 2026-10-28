@@ -103,7 +103,13 @@ export function ActivityTimeline({
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-zinc-500">
                         <span className="font-medium text-zinc-700 dark:text-zinc-300">{TYPE_LABELS[item.type]}</span>
-                        {item.author ? ` · ${item.author}` : ""} · {formatDateTime(item.at, org)}
+                        {item.author ? ` · ${item.author}` : ""}
+                        {item.source ? (
+                          <span className="ml-1 rounded bg-amber-50 px-1 py-px text-amber-800 dark:bg-amber-950 dark:text-amber-300" title="Submitted from outside the app; the sender's identity isn't verified.">
+                            via {item.source} · unverified
+                          </span>
+                        ) : null}{" "}
+                        · {formatDateTime(item.at, org)}
                         {item.type === "task" && item.completedAt ? ` · done ${formatDateTime(item.completedAt, org)}` : ""}
                         {showLead && item.lead ? (
                           <>

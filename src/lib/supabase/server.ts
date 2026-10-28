@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { env } from "@/lib/env";
 import type { Database } from "@/lib/database.types";
+import { sessionCookieOptions } from "@/lib/supabase/cookies";
 
 // Acts as the signed-in user; every query is subject to RLS.
 export async function createClient() {
@@ -13,6 +14,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(env.supabaseUrl, env.supabasePublishableKey, {
+    cookieOptions: sessionCookieOptions,
     cookies: {
       getAll() {
         return cookieStore.getAll();

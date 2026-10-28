@@ -16,7 +16,7 @@ async function SetupPageContent() {
       title="Set up Lead Tracker"
       description="Create the owner account first. Next you'll set up your organization and invite your team."
     >
-      <SetupForm />
+      <SetupForm needsToken={Boolean(process.env.SETUP_TOKEN)} />
     </AuthShell>
   );
 }

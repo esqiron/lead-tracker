@@ -3,6 +3,9 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(12);
 
+-- These tests create several organizations, like a hosted instance.
+update public.instance_settings set allow_multiple_orgs = true, first_org_created_at = null;
+
 create schema tests;
 create function tests.report_as(p_uid uuid, p_from date, p_to date, p_owner uuid default null) returns jsonb
 language plpgsql as $$

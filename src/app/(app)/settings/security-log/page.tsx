@@ -12,7 +12,7 @@ import { SettingsSection } from "../settings-section";
 export const metadata: Metadata = { title: "Security log" };
 
 const SECURITY_ENTITIES = ["memberships", "invitations", "api_keys", "capture_forms", "organizations", "pipeline_stages", "lead_sources", "profiles", "report"];
-const SECURITY_ACTIONS = ["export", "import", "erase", "password_reset"];
+const SECURITY_ACTIONS = ["export", "import", "erase", "password_reset", "retention"];
 
 const ENTITY_LABELS: Record<string, string> = {
   memberships: "Member",
@@ -36,6 +36,7 @@ const ACTION_LABELS: Record<string, string> = {
   import: "imported",
   erase: "erased",
   password_reset: "password reset sent",
+  retention: "retention applied",
 };
 
 // Short, readable summary of what changed, without dumping whole rows.
@@ -52,7 +53,7 @@ function summary(entity: string, action: string, diff: unknown): string {
   }
   if (entity === "invitations" || entity === "memberships") return [d.email, d.role].filter(Boolean).map(String).join(" · ");
   if (entity === "api_keys" || entity === "capture_forms" || entity === "pipeline_stages" || entity === "lead_sources") return String(d.name ?? "");
-  if (action === "export" || action === "import") return Object.entries(d).filter(([k]) => k !== "filters").map(([k, v]) => `${k}: ${short(v)}`).join(" · ");
+  if (action === "export" || action === "import" || action === "retention") return Object.entries(d).filter(([k]) => k !== "filters").map(([k, v]) => `${k}: ${short(v)}`).join(" · ");
   return "";
 }
 

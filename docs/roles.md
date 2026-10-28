@@ -17,7 +17,11 @@ Every person belongs to an organization with exactly one role. The rules are enf
 | Move a record to the trash | ✅ | ✅ | own records | |
 | Reassign a record to someone else | ✅ | ✅ | own or unassigned records | |
 | Restore from the trash, delete forever | ✅ | ✅ | | |
+| Set a contact's lawful basis, withdraw consent, mark do-not-contact | ✅ | ✅ | ✅ | |
+| Allow a do-not-contact contact again | ✅ | ✅ | | |
+| Export one contact's data (GDPR access request) | ✅ | ✅ | | |
 | Erase a contact and their data (GDPR) | ✅ | ✅ | | |
+| Set data retention rules | ✅ | ✅ | | |
 | Read the security log | ✅ | ✅ | | |
 | Export all organization data (JSON) | ✅ | | | |
 | See all leads and contacts | ✅ | ✅ | depends on org setting | ✅ |
@@ -35,6 +39,7 @@ Every person belongs to an organization with exactly one role. The rules are enf
 - A self-hosted instance holds **one organization**. The database enforces this, not just the app.
 - The author of a record or note, the organization it belongs to, and what a note is attached to can't be changed after the fact.
 - A lead's won/lost status always follows its stage.
+- Consent records are written only by capture forms. A consent withdrawal can't be undone, and do-not-contact can only be lifted by an admin under a basis other than a withdrawn consent. See [gdpr.md](gdpr.md).
 - Records can't reference another organization's records: composite foreign keys reject it.
 
 ## Joining

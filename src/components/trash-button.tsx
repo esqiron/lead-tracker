@@ -9,10 +9,12 @@ export function TrashButton({
   action,
   confirmText,
   label = "Delete",
+  variant = "danger",
 }: {
   action: () => Promise<FormState>;
   confirmText: string;
   label?: string;
+  variant?: "danger" | "secondary";
 }) {
   const [state, formAction] = useActionState(action, {});
   return (
@@ -23,7 +25,7 @@ export function TrashButton({
       }}
       className="contents"
     >
-      <SubmitButton variant="danger" pendingLabel="Working…">
+      <SubmitButton variant={variant} pendingLabel="Working…">
         {label}
       </SubmitButton>
       {state.error ? (

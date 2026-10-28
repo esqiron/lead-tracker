@@ -57,7 +57,7 @@ export function CaptureFormEditor({
   const fieldsJson = JSON.stringify(rows.filter((r) => r.included).map(({ key, label, required }) => ({ key, label: label.trim() || DEFAULT_FIELD_LABELS[key], required })));
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form key={JSON.stringify(initial)} action={formAction} className="space-y-8">
       {state.error ? <Alert>{state.error}</Alert> : null}
       {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       <input type="hidden" name="fields" value={fieldsJson} />

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { csvResponse, EXPORT_LIMIT, requireExportAccess } from "@/lib/csv-response";
 import { applyContactFilters, readContactFilters } from "@/lib/list-filters";
+import { lawfulBasisLabel } from "@/lib/privacy";
 import { createClient } from "@/lib/supabase/server";
 import { userMessage } from "@/lib/errors";
 import { logEvent } from "@/lib/audit";
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     supabase
       .from("contacts")
       .select(
-        `id, first_name, last_name, email, phone, title, tags, notes, created_at, consented_at, consent_text,
+        `id, first_name, last_name, email, phone, title, tags, notes, created_at, consented_at, consent_text, lawful_basis, consent_withdrawn_at, do_not_contact_at,
         company:companies!contacts_org_id_company_id_fkey(name),
         owner:profiles!contacts_owner_id_fkey(email)`,
       )
@@ -34,9 +35,9 @@ export async function GET(request: NextRequest) {
 
   return csvResponse(
     "contacts",
-    ["First name", "Last name", "Email", "Phone", "Job title", "Company", "Tags", "Notes", "Owner email", "Consented at", "Consent text", "Created at", "ID"],
+    ["First name", "Last name", "Email", "Phone", "Job title", "Company", "Tags", "Notes", "Owner email", "Consented at", "Consent text", "Lawful basis", "Consent withdrawn at", "Do not contact since", "Created at", "ID"],
     (data ?? []).map((c) => [
-      c.first_name, c.last_name, c.email, c.phone, c.title, c.company?.name, c.tags, c.notes, c.owner?.email, c.consented_at, c.consent_text, c.created_at, c.id,
+      c.first_name, c.last_name, c.email, c.phone, c.title, c.company?.name, c.tags, c.notes, c.owner?.email, c.consented_at, c.consent_text, lawfulBasisLabel(c.lawful_basis), c.consent_withdrawn_at, c.do_not_contact_at, c.created_at, c.id,
     ]),
   );
 }

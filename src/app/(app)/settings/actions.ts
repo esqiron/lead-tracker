@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { userMessage } from "@/lib/errors";
 import { allowed, TOO_MANY } from "@/lib/rate-limit";
 import { logEvent } from "@/lib/audit";
+import { AUDIT_RETENTION_OPTIONS, CONTACT_RETENTION_OPTIONS } from "@/lib/privacy";
 
 // --- Organization -------------------------------------------------------------
 
@@ -43,6 +44,27 @@ export async function updateOrganization(_: FormState, formData: FormData): Prom
   if (error) return { error: userMessage(error) };
 
   revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
+export async function updateRetention(_: FormState, formData: FormData): Promise<FormState> {
+  const { org } = await requireSettingsAdmin();
+  const months = (name: string, options: number[]) => {
+    const value = Number(field(formData, name));
+    return options.includes(value) ? value : null;
+  };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      retention_months: months("retention_months", CONTACT_RETENTION_OPTIONS),
+      audit_retention_months: months("audit_retention_months", AUDIT_RETENTION_OPTIONS),
+    })
+    .eq("id", org.id);
+  if (error) return { error: userMessage(error) };
+
+  revalidatePath("/settings/general");
   return { message: "Saved." };
 }
 

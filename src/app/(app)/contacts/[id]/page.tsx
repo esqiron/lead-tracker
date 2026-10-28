@@ -12,11 +12,13 @@ import { canEditRole, canTrashRecord, isAdminRole, requireReadyOrg } from "@/lib
 import { getMembers, getStages } from "@/lib/crm";
 import { contactName, formatDate, formatMoney, initials, personName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { eraseContact, trashContact } from "../actions";
+import { lawfulBasisLabel } from "@/lib/privacy";
+import { eraseContact, setDoNotContact, trashContact, withdrawConsent } from "../actions";
 
 export const metadata: Metadata = { title: "Contact" };
 
-const CONTACT_SELECT = `id, first_name, last_name, email, phone, title, tags, notes, owner_id, created_at, consented_at, consent_text,
+const CONTACT_SELECT = `id, first_name, last_name, email, phone, title, tags, notes, owner_id, created_at, consented_at, consent_text, consent_source,
+  lawful_basis, consent_withdrawn_at, do_not_contact_at,
   company:companies!contacts_org_id_company_id_fkey(id, name, website),
   owner:profiles!contacts_owner_id_fkey(full_name, email)`;
 
@@ -72,7 +74,10 @@ async function ContactPageContent({ params }: PageProps<"/contacts/[id]">) {
               {initials(name)}
             </span>
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{name}</h1>
+              <div className="flex min-w-0 items-center gap-2">
+                <h1 className="truncate text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{name}</h1>
+                {contact.do_not_contact_at ? <Badge tone="warning">Do not contact</Badge> : null}
+              </div>
               <p className="truncate text-sm text-zinc-500">{[contact.title, contact.company?.name].filter(Boolean).join(" at ")}</p>
             </div>
           </div>
@@ -188,12 +193,67 @@ async function ContactPageContent({ params }: PageProps<"/contacts/[id]">) {
                 </Detail>
               ) : null}
               <Detail label="Added">{formatDate(contact.created_at, org)}</Detail>
-              {contact.consented_at ? (
-                <Detail label="Consent">
-                  <span title={contact.consent_text ?? undefined}>{formatDate(contact.consented_at, org)}</span>
-                </Detail>
-              ) : null}
             </dl>
+          </Card>
+          <Card className="p-4">
+            <h2 className="mb-3 text-sm font-medium">Privacy</h2>
+            <dl className="space-y-2.5 text-sm">
+              <Detail label="Lawful basis">
+                {lawfulBasisLabel(contact.lawful_basis) ?? <span className="text-zinc-500">Not set</span>}
+              </Detail>
+              <Detail label="Consent">
+                {contact.consented_at ? (
+                  <span className="block space-y-1">
+                    <span className="block">
+                      {contact.consent_withdrawn_at
+                        ? `Withdrawn ${formatDate(contact.consent_withdrawn_at, org)}`
+                        : `Given ${formatDate(contact.consented_at, org)}`}
+                    </span>
+                    {contact.consent_text ? <span className="block text-xs text-zinc-500">“{contact.consent_text}”</span> : null}
+                    {contact.consent_source ? <span className="block text-xs text-zinc-500">via {contact.consent_source}</span> : null}
+                  </span>
+                ) : contact.consent_withdrawn_at ? (
+                  `Withdrawn ${formatDate(contact.consent_withdrawn_at, org)}`
+                ) : (
+                  <span className="text-zinc-500">No record</span>
+                )}
+              </Detail>
+              <Detail label="Contact">
+                {contact.do_not_contact_at ? `Stopped ${formatDate(contact.do_not_contact_at, org)}` : "Allowed"}
+              </Detail>
+            </dl>
+            {canEdit ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {!contact.consent_withdrawn_at && (contact.consented_at || contact.lawful_basis === "consent") ? (
+                  <TrashButton
+                    action={withdrawConsent.bind(null, contact.id)}
+                    label="Withdraw consent"
+                    variant="secondary"
+                    confirmText={`Record that ${name} withdrew consent? They'll be marked do-not-contact. This can't be undone.`}
+                  />
+                ) : null}
+                {!contact.do_not_contact_at ? (
+                  <TrashButton
+                    action={setDoNotContact.bind(null, contact.id, true)}
+                    label="Stop contact"
+                    variant="secondary"
+                    confirmText={`Mark ${name} do-not-contact? Use it when they object to contact or ask you to restrict processing. Only admins can undo it.`}
+                  />
+                ) : isAdminRole(ctx.role) ? (
+                  <TrashButton
+                    action={setDoNotContact.bind(null, contact.id, false)}
+                    label="Allow contact"
+                    variant="secondary"
+                    confirmText={`Allow contacting ${name} again? Only do this if they asked, or you have a lawful basis for it.`}
+                  />
+                ) : null}
+                {isAdminRole(ctx.role) ? (
+                  <a href={`/contacts/${contact.id}/export`} download className={buttonClass("secondary")}>
+                    Export data
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
           </Card>
           {contact.notes ? (
             <Card className="p-4">

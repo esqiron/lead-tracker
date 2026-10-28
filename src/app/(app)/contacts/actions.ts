@@ -7,12 +7,15 @@ import { findOrCreateCompany } from "@/lib/companies";
 import { field, isEmail, type FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import { userMessage } from "@/lib/errors";
+import { isLawfulBasis } from "@/lib/privacy";
 
 export async function saveContact(contactId: string | null, _: FormState, formData: FormData): Promise<FormState> {
   const { org, role, user } = await requireReadyOrg();
   if (!canEditRole(role)) return { error: "You have view-only access." };
 
+  const basis = field(formData, "lawful_basis");
   const values = {
+    lawful_basis: isLawfulBasis(basis) ? basis : null,
     first_name: field(formData, "first_name") || null,
     last_name: field(formData, "last_name") || null,
     email: field(formData, "email").toLowerCase() || null,
@@ -81,6 +84,41 @@ export async function eraseContact(contactId: string): Promise<FormState> {
   revalidatePath("/leads");
   revalidatePath("/dashboard");
   redirect("/contacts");
+}
+
+// Consent withdrawal is final and also stops contact. The database stamps the
+// time and refuses to undo it.
+export async function withdrawConsent(contactId: string): Promise<FormState> {
+  const { org, role } = await requireReadyOrg();
+  if (!canEditRole(role)) return { error: "You have view-only access." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("contacts")
+    .update({ consent_withdrawn_at: new Date().toISOString() })
+    .eq("id", contactId)
+    .eq("org_id", org.id);
+  if (error) return { error: userMessage(error) };
+
+  revalidatePath(`/contacts/${contactId}`);
+  return {};
+}
+
+// Anyone who can edit can stop contact; only admins can allow it again.
+export async function setDoNotContact(contactId: string, doNotContact: boolean): Promise<FormState> {
+  const { org, role } = await requireReadyOrg();
+  if (!canEditRole(role)) return { error: "You have view-only access." };
+  if (!doNotContact && !isAdminRole(role)) return { error: "Only admins can allow contact again." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("contacts")
+    .update({ do_not_contact_at: doNotContact ? new Date().toISOString() : null })
+    .eq("id", contactId)
+    .eq("org_id", org.id);
+  if (error) return { error: userMessage(error) };
+
+  revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/contacts");
+  return {};
 }
 
 export async function trashContact(contactId: string): Promise<FormState> {

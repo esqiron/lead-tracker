@@ -4,7 +4,8 @@ import { useActionState } from "react";
 import { Alert, Card, Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { CURRENCIES, DATE_FORMATS } from "@/lib/org-options";
-import { deleteOrganization, updateOrganization } from "../actions";
+import { AUDIT_RETENTION_OPTIONS, CONTACT_RETENTION_OPTIONS } from "@/lib/privacy";
+import { deleteOrganization, updateOrganization, updateRetention } from "../actions";
 
 type Values = { name: string; currency: string; timezone: string; dateFormat: string; leadVisibility: "all" | "own" };
 
@@ -17,8 +18,10 @@ export function OrgSettingsForm({ initial, timezones }: { initial: Values; timez
   const [state, action] = useActionState(updateOrganization, {});
   const errors = state.fieldErrors ?? {};
 
+  // React resets a form after its action runs; remounting it on new saved
+  // values makes the reset land on those instead of the old ones.
   return (
-    <form action={action} className="space-y-6">
+    <form key={JSON.stringify(initial)} action={action} className="space-y-6">
       {state.error ? <Alert>{state.error}</Alert> : null}
       {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       <Field label="Organization name" htmlFor="name" error={errors.name}>
@@ -73,6 +76,49 @@ export function OrgSettingsForm({ initial, timezones }: { initial: Values; timez
       </fieldset>
       <div className="flex justify-end">
         <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
+      </div>
+    </form>
+  );
+}
+
+function monthsLabel(months: number) {
+  return months % 12 === 0 ? `${months / 12} year${months === 12 ? "" : "s"}` : `${months} months`;
+}
+
+export function RetentionForm({ initial }: { initial: { contacts: number | null; audit: number | null } }) {
+  const [state, action] = useActionState(updateRetention, {});
+  return (
+    <form key={JSON.stringify(initial)} action={action} className="space-y-6">
+      {state.error ? <Alert>{state.error}</Alert> : null}
+      {state.message ? <Alert tone="success">{state.message}</Alert> : null}
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field
+          label="Inactive contacts"
+          htmlFor="retention_months"
+          hint="Contacts with no open leads and no activity for this long move to the trash with their leads, and are deleted 30 days later."
+        >
+          <Select id="retention_months" name="retention_months" defaultValue={initial.contacts ?? ""}>
+            <option value="">Keep</option>
+            {CONTACT_RETENTION_OPTIONS.map((m) => (
+              <option key={m} value={m}>
+                Delete after {monthsLabel(m)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Audit log" htmlFor="audit_retention_months" hint="Older entries in the security log and record history are deleted.">
+          <Select id="audit_retention_months" name="audit_retention_months" defaultValue={initial.audit ?? ""}>
+            <option value="">Keep</option>
+            {AUDIT_RETENTION_OPTIONS.map((m) => (
+              <option key={m} value={m}>
+                Delete after {monthsLabel(m)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <div className="flex justify-end">
+        <SubmitButton pendingLabel="Saving…">Save retention</SubmitButton>
       </div>
     </form>
   );

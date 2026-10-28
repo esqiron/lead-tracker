@@ -4,7 +4,7 @@ import { PageSpinner } from "@/components/page-spinner";
 import { requireSettingsAdmin } from "@/lib/auth";
 import { timezones } from "@/lib/org-options";
 import { SettingsSection } from "../settings-section";
-import { DeleteOrganizationCard, OrgSettingsForm } from "./org-settings-form";
+import { DeleteOrganizationCard, OrgSettingsForm, RetentionForm } from "./org-settings-form";
 import { buttonClass } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Organization settings" };
@@ -25,6 +25,12 @@ async function GeneralSettingsContent() {
             leadVisibility: org.lead_visibility,
           }}
         />
+      </SettingsSection>
+      <SettingsSection
+        title="Data retention"
+        description="Delete personal data you no longer need (GDPR storage limitation). Checked daily; off until you pick a period."
+      >
+        <RetentionForm initial={{ contacts: org.retention_months, audit: org.audit_retention_months }} />
       </SettingsSection>
       {role === "owner" ? (
         <SettingsSection

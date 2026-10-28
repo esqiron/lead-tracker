@@ -5,8 +5,10 @@ import { useActionState } from "react";
 import { Alert, buttonClass, Field, Input, Select, Textarea } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/forms";
+import { LAWFUL_BASES } from "@/lib/privacy";
 
 export type ContactFormValues = {
+  lawful_basis: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -79,6 +81,21 @@ export function ContactForm({
       </div>
       <Field label="Notes" htmlFor="notes">
         <Textarea id="notes" name="notes" defaultValue={initial.notes} rows={4} maxLength={5000} />
+      </Field>
+      <Field
+        label="Lawful basis (GDPR)"
+        htmlFor="lawful_basis"
+        error={errors.lawful_basis}
+        hint={LAWFUL_BASES.find((b) => b.value === initial.lawful_basis)?.description ?? "Why you may store and contact this person."}
+      >
+        <Select id="lawful_basis" name="lawful_basis" defaultValue={initial.lawful_basis}>
+          <option value="">Not set</option>
+          {LAWFUL_BASES.map((b) => (
+            <option key={b.value} value={b.value}>
+              {b.label}
+            </option>
+          ))}
+        </Select>
       </Field>
       <div className="flex items-center justify-end gap-2 border-t border-zinc-200 pt-6 dark:border-zinc-800">
         <Link href={cancelHref} className={buttonClass("ghost")}>

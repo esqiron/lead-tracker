@@ -20,7 +20,7 @@ async function NewContactContent() {
       <PageHeader title="New contact" />
       <ContactForm
         action={saveContact.bind(null, null)}
-        initial={{ first_name: "", last_name: "", email: "", phone: "", title: "", company: "", owner_id: ctx.user.id, tags: "", notes: "" }}
+        initial={{ first_name: "", last_name: "", email: "", phone: "", title: "", company: "", owner_id: ctx.user.id, tags: "", notes: "", lawful_basis: "" }}
         members={members}
         companies={companies}
         submitLabel="Create contact"

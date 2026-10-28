@@ -176,6 +176,9 @@ Filterable by date range, owner, source.
 - Full org export (JSON/CSV) and "delete contact + all related data" (right to erasure).
 - Soft delete with 30-day trash, then hard delete.
 - Audit log of create/update/delete.
+- Lawful basis per contact; consent records written only by capture forms; consent withdrawal and do-not-contact.
+- Per-contact data export (right of access).
+- Optional retention rules: inactive contacts to the trash, old audit entries deleted. Details in [docs/gdpr.md](docs/gdpr.md).
 - No telemetry by default; opt-in only.
 
 ---

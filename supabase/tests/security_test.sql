@@ -3,7 +3,7 @@
 -- Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(26);
 
 create schema tests;
 create function tests.as_user(p_uid uuid, p_sql text) returns void
@@ -51,6 +51,13 @@ insert into public.leads (id, org_id, title, owner_id, stage_id, created_by) val
   ('aaaaaaaa-0000-0000-0000-000000000002', current_setting('test.org')::uuid, 'Member lead', '33333333-3333-3333-3333-333333333333', current_setting('test.stage')::uuid, '33333333-3333-3333-3333-333333333333');
 
 -- Organizations ---------------------------------------------------------------
+select is_empty(
+  $$select p.proname
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace,
+    lateral regexp_matches(p.prosrc, '(\m(?:update|delete\s+from)\s+public\.\w+[^;]*;)', 'gi') m
+    where n.nspname = 'public' and m[1] !~* '\mwhere\M'$$,
+  'no function updates or deletes without WHERE (Supabase API sessions refuse it)');
 select throws_ok(
   $$select tests.as_user('44444444-4444-4444-4444-444444444444', 'select public.create_organization(''Rogue'')')$$,
   '42501', null, 'a self-hosted instance refuses a second organization, even via the API');

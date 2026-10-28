@@ -9,8 +9,9 @@ An open-source lead tracker with contacts and reporting, for small teams. Self-h
 - **Guided setup**: a first-run wizard for your organization, pipeline, lead sources and team.
 - **CSV import & export**: bring contacts and leads over from a spreadsheet or another CRM, and export any filtered list.
 - **Lead capture**: embeddable website forms (spam-protected, with GDPR consent) and an API for Zapier, Make, n8n or your own backend. See [docs/lead-capture.md](docs/lead-capture.md).
+- **Privacy tools**: lawful basis per contact, consent records and withdrawal, do-not-contact, per-person data export, erasure and retention rules. They help you meet GDPR obligations; compliance still depends on how you use them. See [docs/gdpr.md](docs/gdpr.md).
 
-> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, lead capture (forms and API), and reports. See [SPEC.md](SPEC.md) for what comes next.
+> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, lead capture (forms and API), reports, and privacy tools. See [SPEC.md](SPEC.md) for what comes next.
 
 ## Quick start (local)
 
@@ -66,6 +67,17 @@ Details in [docs/roles.md](docs/roles.md).
 ## Security
 
 Access rules live in the database (Row Level Security) and are covered by attack-replay tests. Self-hosters: read the [security model](docs/security.md) and work through the [hardening checklist](docs/self-hosting.md#hardening-checklist). Report vulnerabilities privately; see [SECURITY.md](SECURITY.md).
+
+## Privacy and GDPR
+
+The privacy tools help you meet GDPR obligations, but whoever deploys Lead Tracker is the data controller and is responsible for:
+
+- a **privacy notice** for the people whose data you store;
+- **data processing agreements** with your sub-processors (database host, email provider);
+- an **EU hosting region** for EU personal data;
+- **backup retention**: erased data stays in backups until they expire.
+
+See [docs/gdpr.md](docs/gdpr.md) for what the app covers and what's up to you.
 
 ## Project layout
 

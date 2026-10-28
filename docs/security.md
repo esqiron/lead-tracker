@@ -36,7 +36,7 @@ How Lead Tracker protects data, what it guarantees, and what's up to the people 
 - **Output is escaped.** React escapes HTML. Emails escape inserted values. CSV exports neutralize formula cells. Search terms are stripped of PostgREST filter syntax.
 - **Security headers.** CSP, HSTS, `frame-ancestors`, `nosniff`, a strict referrer policy and a permissions policy. Only hosted forms can be framed.
 - **Audit trail.** Record changes and security events (role changes, invites, API keys, forms, org settings, exports, imports, erasures, admin-sent password resets) go to `audit_log`. Secret columns are never copied in. Admins see it under **Settings → Security log**.
-- **Data protection.** Owners can export all org data as JSON (logged by the database). Admins can permanently erase a contact, including their leads, activity and audit history. Trashed records are purged after 30 days by a scheduled job.
+- **Data protection.** Consent records can only be written by capture forms, and withdrawals can't be undone. Admins can export one contact's data or erase it, including their leads, activity and audit history; owners can export everything. All exports and erasures are logged by the database. Optional retention rules trash inactive contacts and delete old audit entries, and trashed records are purged after 30 days. See [gdpr.md](gdpr.md).
 - **Tests and CI.** Database tests (`supabase/tests/`) replay cross-org, role-escalation and forgery attacks, including every issue found in the security review. CI runs them with lint, a type check, a build and `npm audit` on every pull request. Dependabot keeps dependencies current.
 
 ## Shared responsibility
@@ -48,7 +48,7 @@ The project provides secure code, safe defaults and documentation. **Whoever dep
 - **Supabase configuration:** keeping public sign-ups off and the Email provider on, auth rate limits, MFA on the Supabase dashboard account, network restrictions, backups and point-in-time recovery.
 - **Secrets:** keeping `SUPABASE_SECRET_KEY` and SMTP credentials out of client code and logs, and rotating them if exposed.
 - **Updates:** applying new releases and migrations, and watching security advisories.
-- **Legal:** a privacy policy, data processing agreements with sub-processors (database host, email provider), a lawful basis for storing leads, and answering data subject requests (the export and erase features help).
+- **Legal:** a privacy policy, data processing agreements with sub-processors (database host, email provider), a lawful basis for storing leads, and answering data subject requests. See [gdpr.md](gdpr.md#whats-up-to-you).
 - **Monitoring:** watching logs and the audit log, and alerting on unusual activity.
 
 See the hardening checklist in [self-hosting.md](self-hosting.md#hardening-checklist).
@@ -59,7 +59,7 @@ See the hardening checklist in [self-hosting.md](self-hosting.md#hardening-check
 - **Sign-in limits.** Per account, only failed attempts count: 10 per 15 minutes per account and network, and 100 per hour per account overall. Someone deliberately failing 100 times an hour can block an account's sign-in for that hour; the owner can still reset their password.
 - **Custom HTML forms** can't carry the signed "too fast" token, so they rely on the honeypot and rate limits. Prefer the iframe embed.
 - **Existence checks.** In "own leads" mode a member can learn that a contact with a given email exists (the duplicate-email error). Supabase's change-email endpoint can reveal whether an address has an account on the instance.
-- **Erasure scope.** Erasing a contact removes their leads and notes. Their name can remain in other places people typed it, such as another lead's title or a note on a different contact.
+- **Erasure scope.** Erasing a contact removes their leads and notes. Their name can remain in other places people typed it, such as another lead's title or a note on a different contact, and in database backups until those expire.
 - **No built-in MFA for app users yet.** Supabase supports TOTP MFA; the UI for it isn't built.
 - **Sign-in brute-force protection is Supabase's.** It's IP-based and configurable under Authentication → Rate Limits, but there's no per-account lockout in the app.
 - **Without email** (self-hosted only), admins share invite links themselves, and the owner can copy a member's password reset link. Whoever holds such a link can create or sign in to that account, so share them only with the person they're for. Set up SMTP to avoid this.

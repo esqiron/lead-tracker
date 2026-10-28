@@ -15,7 +15,7 @@ Create a form, choose which fields it shows and which are required, then pick:
 
 - **Start in stage** and **Source** for new leads.
 - **Assign to**: the organization owner, a specific person, or **round robin**, which takes turns across owners, admins and members.
-- **Consent checkbox**: when set, visitors must tick it. The exact text, the time and the form are saved as a GDPR consent record on contacts the submission creates. An existing contact's consent is never overwritten.
+- **Consent checkbox**: when set, visitors must tick it. The exact text, the time and the form are saved as a GDPR consent record on contacts the submission creates, and their lawful basis is set to *Consent*. An existing contact's consent is never overwritten. See [gdpr.md](gdpr.md).
 - **After sending, go to**: your own thank-you page. Leave it empty for a built-in message.
 - **Allowed websites**: when set, browsers on other sites can't post to or embed-submit the form. It doesn't stop scripts that leave out the `Origin` header, so it isn't spam protection. The hosted page itself always works.
 - **Email the lead's owner** about each submission (at most 30 emails per form per hour). The email doesn't repeat the visitor's text; it links to the lead. This needs [SMTP](email-setup.md).

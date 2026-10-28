@@ -20,7 +20,7 @@ async function EditContactContent({ params }: PageProps<"/contacts/[id]/edit">) 
   const supabase = await createClient();
   const { data: contact } = await supabase
     .from("contacts")
-    .select("id, first_name, last_name, email, phone, title, owner_id, tags, notes, company:companies!contacts_org_id_company_id_fkey(name)")
+    .select("id, first_name, last_name, email, phone, title, owner_id, tags, notes, lawful_basis, company:companies!contacts_org_id_company_id_fkey(name)")
     .eq("id", id)
     .eq("org_id", ctx.org.id)
     .is("deleted_at", null)
@@ -44,6 +44,7 @@ async function EditContactContent({ params }: PageProps<"/contacts/[id]/edit">) 
           owner_id: contact.owner_id ?? "",
           tags: contact.tags.join(", "),
           notes: contact.notes ?? "",
+          lawful_basis: contact.lawful_basis ?? "",
         }}
         members={members}
         companies={companies}

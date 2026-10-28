@@ -9,7 +9,7 @@ import { changePassword, updateProfile } from "../actions";
 export function ProfileForm({ fullName, email }: { fullName: string; email: string }) {
   const [state, action] = useActionState(updateProfile, {});
   return (
-    <form action={action} className="space-y-5">
+    <form key={fullName} action={action} className="space-y-5">
       {state.error ? <Alert>{state.error}</Alert> : null}
       {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       <div className="grid gap-5 sm:grid-cols-2">

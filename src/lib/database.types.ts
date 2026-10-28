@@ -384,15 +384,18 @@ export type Database = {
           company_id: string | null
           consent_source: string | null
           consent_text: string | null
+          consent_withdrawn_at: string | null
           consented_at: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
+          do_not_contact_at: string | null
           email: string | null
           first_name: string | null
           id: string
           last_name: string | null
+          lawful_basis: Database["public"]["Enums"]["lawful_basis"] | null
           notes: string | null
           org_id: string
           owner_id: string | null
@@ -405,15 +408,18 @@ export type Database = {
           company_id?: string | null
           consent_source?: string | null
           consent_text?: string | null
+          consent_withdrawn_at?: string | null
           consented_at?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
+          do_not_contact_at?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          lawful_basis?: Database["public"]["Enums"]["lawful_basis"] | null
           notes?: string | null
           org_id: string
           owner_id?: string | null
@@ -426,15 +432,18 @@ export type Database = {
           company_id?: string | null
           consent_source?: string | null
           consent_text?: string | null
+          consent_withdrawn_at?: string | null
           consented_at?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
+          do_not_contact_at?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          lawful_basis?: Database["public"]["Enums"]["lawful_basis"] | null
           notes?: string | null
           org_id?: string
           owner_id?: string | null
@@ -833,6 +842,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          audit_retention_months: number | null
           created_at: string
           created_by: string | null
           currency: string
@@ -841,6 +851,7 @@ export type Database = {
           lead_visibility: Database["public"]["Enums"]["lead_visibility"]
           logo_url: string | null
           name: string
+          retention_months: number | null
           setup_completed_at: string | null
           setup_step: Database["public"]["Enums"]["setup_step"]
           slug: string
@@ -848,6 +859,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audit_retention_months?: number | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -856,6 +868,7 @@ export type Database = {
           lead_visibility?: Database["public"]["Enums"]["lead_visibility"]
           logo_url?: string | null
           name: string
+          retention_months?: number | null
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug: string
@@ -863,6 +876,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audit_retention_months?: number | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -871,6 +885,7 @@ export type Database = {
           lead_visibility?: Database["public"]["Enums"]["lead_visibility"]
           logo_url?: string | null
           name?: string
+          retention_months?: number | null
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug?: string
@@ -982,6 +997,7 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      apply_retention: { Args: never; Returns: Json }
       can_create_organization: { Args: never; Returns: boolean }
       can_edit_org_data: { Args: { p_org: string }; Returns: boolean }
       can_see_all_records: { Args: { p_org: string }; Returns: boolean }
@@ -1013,6 +1029,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["org_role"]
       }
       erase_contact: { Args: { p_contact: string }; Returns: Json }
+      export_contact_data: { Args: { p_contact: string }; Returns: Json }
       export_org_data: { Args: { p_org: string }; Returns: Json }
       get_invitation: {
         Args: { p_token: string }
@@ -1113,6 +1130,11 @@ export type Database = {
     }
     Enums: {
       activity_type: "note" | "call" | "email" | "meeting" | "task"
+      lawful_basis:
+        | "consent"
+        | "contract"
+        | "legitimate_interest"
+        | "legal_obligation"
       lead_status: "open" | "won" | "lost"
       lead_visibility: "all" | "own"
       membership_status: "active" | "disabled"
@@ -1255,6 +1277,12 @@ export const Constants = {
   public: {
     Enums: {
       activity_type: ["note", "call", "email", "meeting", "task"],
+      lawful_basis: [
+        "consent",
+        "contract",
+        "legitimate_interest",
+        "legal_obligation",
+      ],
       lead_status: ["open", "won", "lost"],
       lead_visibility: ["all", "own"],
       membership_status: ["active", "disabled"],

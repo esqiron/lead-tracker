@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Contacts" };
 
 const PAGE_SIZE = 50;
 
-const CONTACT_SELECT = `id, first_name, last_name, email, phone, title, tags, created_at,
+const CONTACT_SELECT = `id, first_name, last_name, email, phone, title, tags, created_at, do_not_contact_at,
   company:companies!contacts_org_id_company_id_fkey(name),
   owner:profiles!contacts_owner_id_fkey(full_name, email)`;
 
@@ -158,8 +158,9 @@ async function ContactsPageContent({ searchParams }: PageProps<"/contacts">) {
                         <Link href={`/contacts/${contact.id}`} className="block truncate font-medium text-zinc-900 hover:underline dark:text-zinc-100">
                           {contactName(contact)}
                         </Link>
-                        {contact.title || contact.tags.length ? (
+                        {contact.title || contact.tags.length || contact.do_not_contact_at ? (
                           <span className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-zinc-500">
+                            {contact.do_not_contact_at ? <Badge tone="warning">Do not contact</Badge> : null}
                             {contact.title}
                             {contact.tags.map((t) => (
                               <Link key={t} href={hrefWith(sp, { tag: t, page: undefined })}>

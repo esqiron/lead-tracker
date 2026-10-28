@@ -80,7 +80,8 @@ The app ships with safe defaults. These steps are on you as the operator. Backgr
 - [ ] **Authentication → Rate Limits:** every sign-in reaches Supabase from your app server's IP, so the per-IP sign-in limit there applies to all your users together. Raise it (e.g. to 300 per 5 minutes); the app limits sign-ins per client itself.
 - [ ] **Database → Backups:** confirm daily backups. Consider point-in-time recovery for production data.
 - [ ] **Database → Network restrictions:** allow only the addresses that need direct database access (usually none: the app uses the API).
-- [ ] **Database → Extensions:** keep `pg_cron` enabled. The migrations schedule the daily trash purge with it (`lead-tracker-purge-trash`). Without pg_cron, run `select public.purge_trash(30);` daily yourself.
+- [ ] **Database → Extensions:** keep `pg_cron` enabled. The migrations schedule two daily jobs with it: the trash purge (`lead-tracker-purge-trash`) and retention rules (`lead-tracker-retention`). Without pg_cron, run `select public.apply_retention();` and then `select public.purge_trash(30);` daily yourself.
+- [ ] **Privacy:** read [gdpr.md](gdpr.md) and set data retention under **Settings → General**. Pick an EU region for EU data.
 
 **Reverse proxy (if not on Vercel)**
 - [ ] Make your proxy **overwrite** `X-Forwarded-For`/`X-Real-IP` with the real client address, or append to it, and set `TRUSTED_PROXY_HOPS` to the number of proxies. Otherwise clients can spoof their IP and get around per-IP rate limits.

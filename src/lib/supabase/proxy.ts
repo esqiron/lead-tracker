@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
 // Paths reachable without a session.
-const PUBLIC_PATHS = ["/login", "/setup", "/forgot-password", "/auth", "/invite"];
+// /api/v1 and /f are the public lead capture API and hosted forms.
+const PUBLIC_PATHS = ["/login", "/setup", "/forgot-password", "/auth", "/invite", "/api/v1", "/f"];
 
 function matches(pathname: string, paths: string[]) {
   return paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));

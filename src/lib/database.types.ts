@@ -231,6 +231,7 @@ export type Database = {
           public_id: string
           redirect_url: string | null
           round_robin: boolean
+          round_robin_cursor: number
           updated_at: string
         }
         Insert: {
@@ -249,6 +250,7 @@ export type Database = {
           public_id?: string
           redirect_url?: string | null
           round_robin?: boolean
+          round_robin_cursor?: number
           updated_at?: string
         }
         Update: {
@@ -267,6 +269,7 @@ export type Database = {
           public_id?: string
           redirect_url?: string | null
           round_robin?: boolean
+          round_robin_cursor?: number
           updated_at?: string
         }
         Relationships: [
@@ -625,6 +628,8 @@ export type Database = {
       }
       leads: {
         Row: {
+          api_key_id: string | null
+          capture_form_id: string | null
           closed_at: string | null
           company_id: string | null
           contact_id: string | null
@@ -647,6 +652,8 @@ export type Database = {
           value: number
         }
         Insert: {
+          api_key_id?: string | null
+          capture_form_id?: string | null
           closed_at?: string | null
           company_id?: string | null
           contact_id?: string | null
@@ -669,6 +676,8 @@ export type Database = {
           value?: number
         }
         Update: {
+          api_key_id?: string | null
+          capture_form_id?: string | null
           closed_at?: string | null
           company_id?: string | null
           contact_id?: string | null
@@ -691,6 +700,20 @@ export type Database = {
           value?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_capture_form_id_fkey"
+            columns: ["capture_form_id"]
+            isOneToOne: false
+            referencedRelation: "capture_forms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leads_created_by_fkey"
             columns: ["created_by"]
@@ -914,6 +937,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          bucket: string
+          hits: number
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          hits: number
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          hits?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -925,6 +966,15 @@ export type Database = {
       can_view_record: {
         Args: { p_org: string; p_owner: string }
         Returns: boolean
+      }
+      capture_lead: {
+        Args: {
+          p_api_key?: string
+          p_form?: string
+          p_org: string
+          p_payload: Json
+        }
+        Returns: Json
       }
       clear_sample_data: { Args: { p_org: string }; Returns: undefined }
       create_organization: {
@@ -958,10 +1008,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      hit_rate_limit: {
+        Args: { p_bucket: string; p_max: number; p_window_seconds: number }
+        Returns: boolean
+      }
       instance_initialized: { Args: never; Returns: boolean }
       is_org_admin: { Args: { p_org: string }; Returns: boolean }
       is_org_member: { Args: { p_org: string }; Returns: boolean }
       load_sample_data: { Args: { p_org: string }; Returns: undefined }
+      next_round_robin_owner: { Args: { p_form: string }; Returns: string }
       remove_member: { Args: { p_membership: string }; Returns: undefined }
       save_lead_sources: {
         Args: { p_org: string; p_sources: Json }

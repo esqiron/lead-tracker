@@ -8,8 +8,9 @@ An open-source lead tracker with contacts and reporting, for small teams. Self-h
 - **Teams**: invite people by email as Admin, Member or Viewer. Row Level Security enforces access in the database.
 - **Guided setup**: a first-run wizard for your organization, pipeline, lead sources and team.
 - **CSV import & export**: bring contacts and leads over from a spreadsheet or another CRM, and export any filtered list.
+- **Lead capture**: embeddable website forms (spam-protected, with GDPR consent) and an API for Zapier, Make, n8n or your own backend. See [docs/lead-capture.md](docs/lead-capture.md).
 
-> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), and CSV import/export. Next: inbound capture (API and embeddable form) and full reports. See [SPEC.md](SPEC.md).
+> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, and lead capture (forms and API). Next: full reports. See [SPEC.md](SPEC.md).
 
 ## Quick start (local)
 
@@ -72,7 +73,9 @@ src/lib/auth.ts        current user/org, routing rules, page guards
 src/app/(auth)/        login, first-run setup, forgot password
 src/app/invite/        accept an invitation
 src/app/onboarding/    setup wizard steps
-src/app/dashboard/     landing page once setup is complete
+src/app/(app)/         dashboard, leads, contacts, settings
+src/app/api/v1/        public lead capture API and form submissions
+src/app/f/             hosted, embeddable capture forms
 ```
 
 ## Scripts

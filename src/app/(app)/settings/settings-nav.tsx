@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/settings/members", label: "Members", admin: true },
   { href: "/settings/pipeline", label: "Pipeline", admin: true },
   { href: "/settings/sources", label: "Lead sources", admin: true },
+  { href: "/settings/capture", label: "Lead capture", admin: true },
 ];
 
 export function SettingsNav({ isAdmin }: { isAdmin: boolean }) {
@@ -17,7 +18,7 @@ export function SettingsNav({ isAdmin }: { isAdmin: boolean }) {
   return (
     <nav aria-label="Settings" className="flex gap-1 overflow-x-auto md:flex-col">
       {LINKS.filter((l) => isAdmin || !l.admin).map((link) => {
-        const active = pathname === link.href;
+        const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (
           <Link
             key={link.href}

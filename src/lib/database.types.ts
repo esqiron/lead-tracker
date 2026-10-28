@@ -1018,6 +1018,49 @@ export type Database = {
       load_sample_data: { Args: { p_org: string }; Returns: undefined }
       next_round_robin_owner: { Args: { p_form: string }; Returns: string }
       remove_member: { Args: { p_membership: string }; Returns: undefined }
+      report: {
+        Args: {
+          p_from: string
+          p_org: string
+          p_owner?: string
+          p_source?: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      report_leads: {
+        Args: { p_org: string; p_owner: string; p_source: string }
+        Returns: {
+          api_key_id: string | null
+          capture_form_id: string | null
+          closed_at: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          expected_close_date: string | null
+          id: string
+          lost_reason: string | null
+          org_id: string
+          owner_id: string | null
+          source_id: string | null
+          stage_id: string
+          status: Database["public"]["Enums"]["lead_status"]
+          tags: string[]
+          title: string
+          updated_at: string
+          value: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "leads"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       save_lead_sources: {
         Args: { p_org: string; p_sources: Json }
         Returns: undefined

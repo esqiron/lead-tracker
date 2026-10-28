@@ -79,9 +79,14 @@ async function DashboardPageContent() {
       <Card className="p-5">
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Pipeline by stage</h2>
-          <Link href="/leads" className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400">
-            Open board
-          </Link>
+          <span className="flex gap-4">
+            <Link href="/reports" className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400">
+              Full reports
+            </Link>
+            <Link href="/leads" className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400">
+              Open board
+            </Link>
+          </span>
         </div>
         {all.length ? (
           <ul className="mt-4 space-y-3">

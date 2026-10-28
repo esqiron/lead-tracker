@@ -4,13 +4,13 @@ An open-source lead tracker with contacts and reporting, for small teams. Self-h
 
 - **Pipeline**: leads move through stages you define, and are marked won or lost.
 - **Contacts & companies**: one contact can have many leads over time.
-- **Reporting**: open and weighted pipeline, win rate, pipeline by stage.
+- **Reporting**: headline numbers vs the previous period, won/lost and new leads over time, conversion funnel, pipeline by stage, days in each stage, lost reasons, sources and a team leaderboard. Filter by period, owner and source; export any report to CSV.
 - **Teams**: invite people by email as Admin, Member or Viewer. Row Level Security enforces access in the database.
 - **Guided setup**: a first-run wizard for your organization, pipeline, lead sources and team.
 - **CSV import & export**: bring contacts and leads over from a spreadsheet or another CRM, and export any filtered list.
 - **Lead capture**: embeddable website forms (spam-protected, with GDPR consent) and an API for Zapier, Make, n8n or your own backend. See [docs/lead-capture.md](docs/lead-capture.md).
 
-> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, and lead capture (forms and API). Next: full reports. See [SPEC.md](SPEC.md).
+> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, lead capture (forms and API), and reports. See [SPEC.md](SPEC.md) for what comes next.
 
 ## Quick start (local)
 

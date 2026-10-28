@@ -24,3 +24,22 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Chart colors (validated with the dataviz palette checks against the card
+   surfaces: #ffffff light, #09090b dark). Accent for the measure that matters,
+   muted gray for context. */
+:root {
+  --viz-accent: #2a78d6;
+  --viz-muted: #898781;
+  --viz-grid: #e4e4e7;
+  --viz-axis: #a1a1aa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --viz-accent: #3987e5;
+    --viz-muted: #898781;
+    --viz-grid: #27272a;
+    --viz-axis: #52525b;
+  }
+}

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { BarList, ChartCard, ColumnChart, DataTable, LineChart, StatTile, type Series, type SeriesColor } from "@/components/charts";
 import { kpisFor, reportFor, splitFor, type WidgetContext } from "@/lib/dashboard-data";
-import { KPI_METRICS, type Widget, type WidgetOf } from "@/lib/dashboards";
+import { widgetTitle, type Widget, type WidgetOf } from "@/lib/dashboards";
 import { formatMoney } from "@/lib/format";
 import { queryString } from "@/lib/list-filters";
 import { bucketLabel, winRate } from "@/lib/reports";
@@ -57,7 +57,7 @@ async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext })
   const [report, kpis] = await Promise.all([reportFor(...args(ctx)), kpisFor(...args(ctx))]);
   const money = (n: number) => formatMoney(n, ctx.currency);
   const k = report.kpis, p = report.previous, cur = kpis.current, prev = kpis.previous, series = kpis.series;
-  const label = w.title ?? KPI_METRICS[w.options.metric];
+  const label = widgetTitle(w);
   const spark = (values: (number | null)[]) => (w.options.sparkline ? carry(values) : undefined);
   const delta = <T,>(d: T) => (ctx.compare ? d : null);
 
@@ -166,10 +166,9 @@ async function TrendWidget({ w, ctx }: { w: WidgetOf<"trend">; ctx: WidgetContex
 
   const valueFormat = money ? ({ kind: "money", currency: ctx.currency } as const) : ({ kind: "number" } as const);
   const fmt = (n: number) => (money ? formatMoney(n, ctx.currency) : n);
-  const splitLabel = split === "source" ? ", by source" : split === "owner" ? ", by owner" : "";
   return (
     <ChartCard
-      title={w.title ?? `${MEASURE[measure].title}${splitLabel}`}
+      title={widgetTitle(w)}
       description={`Per ${data.bucket}, ${MEASURE[measure].description}`}
       actions={exportLink(ctx, "timeline")}
       table={<DataTable head={["Period", ...series.map((s) => s.label)]} rows={data.buckets.map((b, i) => [labels[i]!, ...series.map((s) => fmt(s.values[i] ?? 0))])} />}
@@ -192,7 +191,7 @@ async function WonLostWidget({ w, ctx }: { w: WidgetOf<"won_lost">; ctx: WidgetC
   const labels = report.timeline.map((t) => bucketLabel(t.bucket, report.bucket));
   return (
     <ChartCard
-      title={w.title ?? "Won and lost"}
+      title={widgetTitle(w)}
       description={`Leads closed per ${report.bucket}`}
       actions={exportLink(ctx, "timeline")}
       table={<DataTable head={["Period", "Won", "Lost"]} rows={report.timeline.map((t, i) => [labels[i]!, t.won_count, t.lost_count])} />}
@@ -216,7 +215,7 @@ async function FunnelWidget({ w, ctx }: { w: WidgetOf<"funnel">; ctx: WidgetCont
   const step = (i: number) => (i === 0 ? created : report.funnel[i - 1]!.reached);
   return (
     <ChartCard
-      title={w.title ?? "Conversion funnel"}
+      title={widgetTitle(w)}
       description="How far the leads created in this period got"
       actions={exportLink(ctx, "funnel")}
       table={
@@ -255,7 +254,7 @@ async function StagesWidget({ w, ctx }: { w: WidgetOf<"stages">; ctx: WidgetCont
   const money = (n: number) => formatMoney(n, ctx.currency);
   return (
     <ChartCard
-      title={w.title ?? "Open pipeline by stage"}
+      title={widgetTitle(w)}
       description="Right now, regardless of period"
       actions={exportLink(ctx, "stages")}
       table={<DataTable head={["Stage", "Leads", "Value", "Win chance"]} rows={report.stages.map((s) => [s.name, s.count, money(s.value), `${s.probability}%`])} />}
@@ -276,7 +275,7 @@ async function VelocityWidget({ w, ctx }: { w: WidgetOf<"velocity">; ctx: Widget
   const report = await reportFor(...args(ctx));
   return (
     <ChartCard
-      title={w.title ?? "Days in each stage"}
+      title={widgetTitle(w)}
       description="Average time before leads moved on, for moves in this period"
       actions={exportLink(ctx, "velocity")}
       table={<DataTable head={["Stage", "Average days", "Moves"]} rows={report.velocity.map((v) => [v.name, v.avg_days ?? "—", v.stays])} />}
@@ -296,7 +295,7 @@ async function LostReasonsWidget({ w, ctx }: { w: WidgetOf<"lost_reasons">; ctx:
   const money = (n: number) => formatMoney(n, ctx.currency);
   return (
     <ChartCard
-      title={w.title ?? "Lost reasons"}
+      title={widgetTitle(w)}
       description="Leads lost in this period"
       actions={exportLink(ctx, "lost_reasons")}
       table={<DataTable head={["Reason", "Leads", "Value"]} rows={report.lost_reasons.map((r) => [r.reason, r.count, money(r.value)])} />}
@@ -314,7 +313,7 @@ async function SourcesWidget({ w, ctx }: { w: WidgetOf<"sources">; ctx: WidgetCo
   const money = (n: number) => formatMoney(n, ctx.currency);
   return (
     <ChartCard
-      title={w.title ?? "Sources"}
+      title={widgetTitle(w)}
       description="Leads created in this period, by where they came from"
       actions={exportLink(ctx, "sources")}
       table={
@@ -343,7 +342,7 @@ async function TeamWidget({ w, ctx }: { w: WidgetOf<"team">; ctx: WidgetContext 
   const money = (n: number) => formatMoney(n, ctx.currency);
   const maxWon = Math.max(1, ...report.leaderboard.map((x) => Number(x.won_value)));
   return (
-    <ChartCard title={w.title ?? "Team"} description="Per person, for this period (open pipeline is right now)" actions={exportLink(ctx, "leaderboard")}>
+    <ChartCard title={widgetTitle(w)} description="Per person, for this period (open pipeline is right now)" actions={exportLink(ctx, "leaderboard")}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[40rem] text-left text-sm">
           <thead className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800">

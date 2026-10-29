@@ -93,6 +93,7 @@ export type Dashboard = {
   layout: Widget[];
   template: string | null;
   saved: boolean;
+  createdBy: string | null;
 };
 
 // Templates are layouts in code. Until a team saves its own dashboards, the
@@ -128,7 +129,39 @@ export type TemplateKey = keyof typeof TEMPLATES;
 
 export function templateDashboard(key: TemplateKey): Dashboard {
   const t = TEMPLATES[key];
-  return { id: key, name: t.name, visibility: "org", filters: t.filters, layout: t.layout, template: key, saved: false };
+  return { id: key, name: t.name, visibility: "org", filters: t.filters, layout: t.layout, template: key, saved: false, createdBy: null };
 }
 
 export const isTemplateKey = (key: string): key is TemplateKey => Object.hasOwn(TEMPLATES, key);
+
+// What the widget library offers, and each type's defaults.
+export const WIDGET_TYPES: Record<WidgetType, { name: string; group: "Numbers" | "Over time" | "Breakdowns"; description: string; span: Span; options: Widget["options"] }> = {
+  kpi: { name: "Number", group: "Numbers", description: "One figure, its change and a trend line", span: 3, options: { metric: "new_leads", sparkline: true } },
+  trend: { name: "Over time", group: "Over time", description: "Won value, deals won or new leads per period, split by source or owner", span: 6, options: { measure: "won_value", split: "source", chart: "columns" } },
+  won_lost: { name: "Won and lost", group: "Over time", description: "Deals closed per period, won against lost", span: 6, options: {} },
+  funnel: { name: "Conversion funnel", group: "Breakdowns", description: "How far new leads got through your stages", span: 6, options: {} },
+  stages: { name: "Open pipeline by stage", group: "Breakdowns", description: "Value sitting in each stage right now", span: 6, options: {} },
+  velocity: { name: "Days in each stage", group: "Breakdowns", description: "How long leads stay before moving on", span: 6, options: {} },
+  lost_reasons: { name: "Lost reasons", group: "Breakdowns", description: "Why deals were lost, and what they were worth", span: 6, options: {} },
+  sources: { name: "Sources", group: "Breakdowns", description: "Where new leads came from and how they did", span: 6, options: {} },
+  team: { name: "Team", group: "Breakdowns", description: "Won value, win rate and activity per person", span: 12, options: {} },
+};
+
+export const TREND_MEASURES = { won_value: "Won value", won_count: "Won", new_leads: "New leads" } as const;
+
+// The title a widget shows when nobody has renamed it.
+export function widgetTitle(w: Widget): string {
+  if (w.title) return w.title;
+  if (w.type === "kpi") return KPI_METRICS[w.options.metric];
+  if (w.type === "trend") {
+    const split = w.options.split === "source" ? " by source" : w.options.split === "owner" ? " by owner" : "";
+    return `${TREND_MEASURES[w.options.measure]}${split}`;
+  }
+  if (w.type === "won_lost") return "Won and lost";
+  return WIDGET_TYPES[w.type].name;
+}
+
+export function newWidget(type: WidgetType, options?: Partial<Widget["options"]>): Widget {
+  const t = WIDGET_TYPES[type];
+  return { id: Math.random().toString(36).slice(2, 10), type, span: t.span, options: { ...t.options, ...options } } as Widget;
+}

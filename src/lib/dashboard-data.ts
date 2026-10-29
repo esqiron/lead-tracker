@@ -6,7 +6,7 @@ import { getReport, type ReportFilters } from "@/lib/reports";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-function toDashboard(row: { id: string; name: string; visibility: string; filters: unknown; layout: unknown; template: string | null }): Dashboard {
+function toDashboard(row: { id: string; name: string; visibility: string; filters: unknown; layout: unknown; template: string | null; created_by: string | null }): Dashboard {
   return {
     id: row.id,
     name: row.name,
@@ -15,23 +15,25 @@ function toDashboard(row: { id: string; name: string; visibility: string; filter
     layout: parseLayout(row.layout),
     template: row.template,
     saved: true,
+    createdBy: row.created_by,
   };
 }
 
 // Dashboards the user can see: shared ones first, then their own. Until the
-// team has saved any, the built-in templates stand in.
+// team has a shared one, the built-in template stands in for it.
 export const listDashboards = cache(async (orgId: string): Promise<Dashboard[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("dashboards")
-    .select("id, name, visibility, filters, layout, template")
+    .select("id, name, visibility, filters, layout, template, created_by")
     .eq("org_id", orgId)
     .is("deleted_at", null)
     .order("visibility", { ascending: true })
     .order("position")
     .order("created_at");
   if (error) throw new Error(error.message);
-  return data.length ? data.map(toDashboard) : [templateDashboard("pipeline-health")];
+  const saved = data.map(toDashboard);
+  return saved.some((d) => d.visibility === "org") ? saved : [templateDashboard("pipeline-health"), ...saved];
 });
 
 export async function getDashboard(orgId: string, id: string): Promise<Dashboard | null> {

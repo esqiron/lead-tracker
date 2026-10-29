@@ -26,15 +26,21 @@ export function ParamSelect({
   label,
   options,
   allLabel,
+  defaultValue = "",
 }: {
   name: string;
   label: string;
   options: { value: string; label: string }[];
   allLabel: string;
+  // What applies with no param in the URL (e.g. a dashboard's saved filter).
+  // Picking "all" over a non-empty default is written as the value "all".
+  defaultValue?: string;
 }) {
   const { setParam, current } = useSetParam();
+  const value = current(name) || defaultValue;
+  const choose = (next: string) => setParam(name, next === defaultValue ? "" : next || "all");
   return (
-    <Select aria-label={label} value={current(name)} onChange={(e) => setParam(name, e.target.value)} className="h-9 w-auto min-w-36">
+    <Select aria-label={label} value={value === "all" ? "" : value} onChange={(e) => choose(e.target.value)} className="h-9 w-auto min-w-36">
       <option value="">{allLabel}</option>
       {options.map((o) => (
         <option key={o.value} value={o.value}>

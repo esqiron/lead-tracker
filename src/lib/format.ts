@@ -50,6 +50,18 @@ export function todayIn(timeZone: string) {
   return `${yyyy}-${MM}-${dd}`;
 }
 
+// "14:22" for today, "Yesterday", otherwise the date. For conversation lists.
+export function shortWhen(value: string, org: OrgFormat) {
+  const parts = zonedParts(value, org.timezone);
+  const day = `${parts.yyyy}-${parts.MM}-${parts.dd}`;
+  const today = todayIn(org.timezone);
+  if (day === today) return parts.time;
+  const yesterday = new Date(`${today}T00:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  if (day === yesterday.toISOString().slice(0, 10)) return "Yesterday";
+  return applyFormat(org.date_format, parts);
+}
+
 export function contactName(contact: { first_name: string | null; last_name: string | null; email?: string | null } | null) {
   if (!contact) return "";
   const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ");

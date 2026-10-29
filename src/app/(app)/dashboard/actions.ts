@@ -11,4 +11,5 @@ export async function clearSampleData() {
   const { error } = await supabase.rpc("clear_sample_data", { p_org: org.id });
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
+  revalidatePath("/inbox", "layout");
 }

@@ -98,7 +98,7 @@ export async function homePath(ctx: Context | null): Promise<string> {
   if (!ctx.org.setup_completed_at) {
     return isAdminRole(ctx.role) ? `/onboarding/${resumeStep(ctx.org.setup_step)}` : "/pending";
   }
-  return "/dashboard";
+  return "/inbox";
 }
 
 export async function requireContext(): Promise<Context> {

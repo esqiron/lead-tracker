@@ -26,6 +26,7 @@ export async function moveLead(leadId: string, stageId: string, lostReason?: str
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
   revalidatePath("/dashboard");
+  revalidatePath("/inbox", "layout");
   return {};
 }
 
@@ -158,4 +159,19 @@ export async function trashLead(leadId: string): Promise<FormState> {
   revalidatePath("/leads");
   revalidatePath("/dashboard");
   redirect("/leads");
+}
+
+// Takes an unowned lead or hands it to a teammate. Members can only reassign
+// leads they own or that nobody owns (enforced by guard_record_update).
+export async function assignLead(formData: FormData): Promise<void> {
+  const { org, role } = await requireReadyOrg();
+  if (!canEditRole(role)) return;
+  const supabase = await createClient();
+  await supabase
+    .from("leads")
+    .update({ owner_id: field(formData, "owner_id") || null })
+    .eq("id", field(formData, "lead_id"))
+    .eq("org_id", org.id);
+  revalidatePath("/leads");
+  revalidatePath("/inbox", "layout");
 }

@@ -19,7 +19,7 @@ async function ImportContent() {
     <div className="mx-auto max-w-4xl space-y-8">
       <div className="space-y-4">
         <Link href="/contacts" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-          ← Contacts
+          ← People
         </Link>
         <PageHeader
           title="Import from CSV"

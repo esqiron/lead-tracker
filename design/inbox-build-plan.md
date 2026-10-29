@@ -1,5 +1,7 @@
 # Inbox + review: build plan
 
+Status: Phase 0 done (3f3c7d7). Phase 1 done: the inbox is home at `/inbox/[scope]/[folder]/[leadId]`.
+
 This plan turns the chosen direction (mock: `design/look-and-feel/flows/inbox.js`, published at https://claude.ai/artifact/AmCviEPj1mdcPZXdEPNBDY) into the real app. Each phase ships on its own and leaves the app working. The existing board, table and detail pages stay reachable throughout. Before writing route code, read the Next 16 docs listed under Phase 1, because this Next version differs from older ones (see `AGENTS.md`).
 
 ## Model in one paragraph

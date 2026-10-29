@@ -43,7 +43,7 @@ async function LeadPageContent({ params }: PageProps<"/leads/[id]">) {
     <div className="space-y-8">
       <div className="space-y-4">
         <Link href="/leads" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-          ← Leads
+          ← Pipeline
         </Link>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">

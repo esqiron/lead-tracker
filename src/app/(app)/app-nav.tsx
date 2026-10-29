@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui";
 
 const LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/leads", label: "Leads" },
-  { href: "/contacts", label: "Contacts" },
+  { href: "/inbox", label: "Inbox" },
+  { href: "/contacts", label: "People" },
+  { href: "/leads", label: "Pipeline" },
   { href: "/reports", label: "Reports" },
   { href: "/settings", label: "Settings" },
 ];
@@ -17,7 +17,7 @@ export function AppNav() {
   return (
     <nav
       aria-label="Main"
-      className="flex items-center gap-0.5 overflow-x-auto rounded-full bg-white/70 p-1 shadow-[0_10px_30px_-12px_rgba(16,24,40,0.18)] ring-1 ring-hairline dark:bg-zinc-900/70"
+      className="order-last flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full sm:order-none bg-white/70 p-1 shadow-[0_10px_30px_-12px_rgba(16,24,40,0.18)] ring-1 ring-hairline dark:bg-zinc-900/70"
     >
       {LINKS.map((link) => {
         const active = pathname === link.href || pathname.startsWith(`${link.href}/`);

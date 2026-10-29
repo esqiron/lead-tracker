@@ -43,6 +43,10 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async redirects() {
+    // The inbox opens on your own threads that need a reply.
+    return [{ source: "/inbox", destination: "/inbox/mine/needs-reply", permanent: false }];
+  },
   async headers() {
     return [
       // Everything except the hosted forms: no framing at all.

@@ -63,7 +63,7 @@ async function ContactPageContent({ params }: PageProps<"/contacts/[id]">) {
     <div className="space-y-8">
       <div className="space-y-4">
         <Link href="/contacts" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-          ← Contacts
+          ← People
         </Link>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-center gap-4">

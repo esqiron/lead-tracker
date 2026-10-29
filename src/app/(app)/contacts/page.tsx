@@ -11,7 +11,7 @@ import { applyContactFilters, queryString, readContactFilters } from "@/lib/list
 import { contactName, formatDate, personName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Contacts" };
+export const metadata: Metadata = { title: "People" };
 
 const PAGE_SIZE = 50;
 
@@ -78,7 +78,7 @@ async function ContactsPageContent({ searchParams }: PageProps<"/contacts">) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Contacts"
+        title="People"
         description={`${count ?? 0} contact${count === 1 ? "" : "s"}${filtered ? (count === 1 ? " matches your filters" : " match your filters") : ""}`}
         actions={
           <>

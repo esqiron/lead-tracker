@@ -12,7 +12,7 @@ import { contactName, formatDate, formatDay, formatMoney, personName, todayIn } 
 import { createClient } from "@/lib/supabase/server";
 import { LeadBoard, type BoardCard } from "./lead-board";
 
-export const metadata: Metadata = { title: "Leads" };
+export const metadata: Metadata = { title: "Pipeline" };
 
 const PAGE_SIZE = 50;
 const BOARD_LIMIT = 500;
@@ -83,14 +83,14 @@ async function LeadsPageContent({ searchParams }: PageProps<"/leads">) {
 
   const toolbar = (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-      <div className="inline-flex rounded-lg border border-zinc-300 p-0.5 dark:border-zinc-700" role="group" aria-label="View">
+      <div className="inline-flex rounded-full bg-white p-0.5 ring-1 ring-hairline dark:bg-zinc-900" role="group" aria-label="View">
         {(["board", "table"] as const).map((v) => (
           <Link
             key={v}
             href={hrefWith(sp, { view: v === "board" ? undefined : v, page: undefined, status: undefined })}
             aria-current={view === v ? "page" : undefined}
             className={cx(
-              "rounded-md px-3 py-1 text-sm capitalize",
+              "rounded-full px-3 py-1 text-sm capitalize",
               view === v ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "text-zinc-600 dark:text-zinc-400",
             )}
           >
@@ -123,7 +123,7 @@ async function LeadsPageContent({ searchParams }: PageProps<"/leads">) {
 
   const header = (
     <PageHeader
-      title="Leads"
+      title="Pipeline"
       description={`${count ?? 0} lead${count === 1 ? "" : "s"}${filtered ? (count === 1 ? " matches your filters" : " match your filters") : ""}`}
       actions={
         <>

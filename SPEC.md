@@ -11,7 +11,7 @@ Decisions locked: Next.js + Supabase · Contacts + leads · Inbound capture in v
 **Goals**
 - Small teams track leads from first touch to won/lost.
 - Self-host in < 15 minutes with a documented, mostly copy-paste setup.
-- First-run wizard; afterwards users land on the dashboard.
+- First-run wizard; afterwards users land in the inbox.
 - Multi-tenant-ready schema from day one (every row scoped by `org_id`), so the hosted version needs no rewrite.
 
 **Non-goals (v1)**
@@ -94,7 +94,7 @@ unauthenticated            → /login  (or /setup on a fresh self-hosted instanc
 authenticated, no org      → /onboarding (hosted mode only)
 org.setup_completed_at null AND role in (owner, admin) → /onboarding/<step>
 org.setup_completed_at null AND other role → "Your workspace is being set up" screen
-otherwise                  → /dashboard
+otherwise                  → /inbox (→ /inbox/mine/needs-reply)
 ```
 
 Wizard progress is saved per step, so closing the tab resumes where they left off.
@@ -109,14 +109,14 @@ Wizard progress is saved per step, so closing the tab resumes where they left of
 4. **Lead sources** — pre-filled defaults, editable.
 5. **Invite team** — rows of email + role; "Skip for now". If email isn't configured, show copyable invite links instead of failing.
 6. **Import (optional)** — CSV upload with column mapping for contacts/leads; or "Load sample data" toggle to explore.
-7. **Done** → dashboard with a short checklist (add first lead, invite team, connect email).
+7. **Done** → the inbox (or the CSV import, if picked).
 
 ---
 
 ## 8. Auth & invites
 
 - Email + password, plus magic link. Google/Microsoft SSO later.
-- **Invite flow**: admin enters email + role → invitation row + email with link `/invite/<token>` → recipient sets name + password (or signs in if account exists) → membership activated → lands on dashboard (skips wizard).
+- **Invite flow**: admin enters email + role → invitation row + email with link `/invite/<token>` → recipient sets name + password (or signs in if account exists) → membership activated → lands in the inbox (skips wizard).
 - Invites expire in 7 days; resend + revoke from Settings → Members.
 - **Password reset**: standard email link, 1h expiry.
 - Email delivery via SMTP env vars (works with Resend, Postmark, SES, Gmail SMTP, Mailgun). Docs include a section per provider.
@@ -126,6 +126,19 @@ Wizard progress is saved per step, so closing the tab resumes where they left of
 
 ## 9. Core features (v1)
 
+**Inbox (home)**
+- Every lead is a conversation thread: its activities, stage changes and review answers, oldest first, with the next step (earliest open task) pinned.
+- Folders, computed by the `lead_threads` view: **Needs reply** (no owner, they wrote last, next step due, or no next step), **Waiting on them**, **Going cold** (no touch in `cold_after_days`, default 14) and **Won** (last 30 days). Mine / Everyone scope.
+- Views: **By stage** and **By owner**, with totals and weighted values.
+- **New** menu (key C): new conversation (person, company, deal, first entry and next step in one transaction, with duplicate check and paste-a-signature fill), add a person, log on an existing deal, import CSV, share the lead form.
+- Slash-command reply box: /note /call /email /meeting /task /move /lost, with call outcome, email direction and "also" options (move stage, tick off and set the next step).
+- Keys: C new, J/K next and previous thread, / reply, E mark the next step done.
+- Email stays log-only: no mailbox sync (see §13).
+
+**Weekly review**
+- Once a week (org `review_day`, default Monday), walk your open deals one at a time: still on track (keep / push the date / lost with reason), close date, next step. Deals that need a look (close date passed, quiet, no next step, no owner) come first; the rest are confirmed together at the end.
+- Summary: what changed, weighted forecast before and after, next steps set. Answers show in each deal's thread.
+
 **Leads**
 - Board (kanban by stage, drag to move) and table view (sort, filter, saved filters).
 - Lead detail: fields, linked contact/company, activity timeline, tasks, stage history.
@@ -134,7 +147,7 @@ Wizard progress is saved per step, so closing the tab resumes where they left of
 
 **Contacts / companies**
 - Table with search, filters, tags.
-- Detail page: info, all leads, activity timeline.
+- Detail page (People): their conversations first, info, privacy, activity timeline, and "New deal with …".
 - Duplicate detection on email.
 
 **Activities & tasks**
@@ -160,7 +173,7 @@ Wizard progress is saved per step, so closing the tab resumes where they left of
 
 Filterable by date range, owner, source.
 
-- **Dashboard KPIs**: open pipeline value, weighted pipeline (value × stage probability), new leads, won value, win rate, avg deal size.
+- **KPIs** (Reports; the old dashboard is still at /dashboard): open pipeline value, weighted pipeline (value × stage probability), new leads, won value, win rate, avg deal size.
 - **Pipeline by stage** (count + value).
 - **Conversion funnel** stage-to-stage (from `lead_stage_history`).
 - **Leads by source** + win rate per source.

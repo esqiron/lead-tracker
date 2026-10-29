@@ -6,13 +6,15 @@ import { ActivityComposer } from "@/components/activity-composer";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { PageSpinner } from "@/components/page-spinner";
 import { TrashButton } from "@/components/trash-button";
-import { Badge, buttonClass, Card, StageBadge } from "@/components/ui";
+import { Badge, buttonClass, Card, cx, StageBadge } from "@/components/ui";
 import { getTimeline } from "@/lib/activities";
 import { canEditRole, canTrashRecord, isAdminRole, requireReadyOrg } from "@/lib/auth";
-import { getMembers, getStages } from "@/lib/crm";
-import { contactName, formatDate, formatMoney, initials, personName } from "@/lib/format";
+import { getMembers, getSources, getStages } from "@/lib/crm";
+import { contactName, formatDate, formatMoney, initials, personName, shortWhen } from "@/lib/format";
+import { getThreadsForContact, REASONS, threadPath } from "@/lib/inbox";
 import { createClient } from "@/lib/supabase/server";
 import { lawfulBasisLabel } from "@/lib/privacy";
+import { NewDealButton } from "../../inbox/new-deal-button";
 import { eraseContact, setDoNotContact, trashContact, withdrawConsent } from "../actions";
 
 export const metadata: Metadata = { title: "Contact" };
@@ -38,18 +40,8 @@ async function ContactPageContent({ params }: PageProps<"/contacts/[id]">) {
     .maybeSingle();
   if (!contact) notFound();
 
-  const [{ data: leads }, stages, members] = await Promise.all([
-    supabase
-      .from("leads")
-      .select("id, title, value, currency, status, stage_id, created_at")
-      .eq("org_id", org.id)
-      .eq("contact_id", contact.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
-    getStages(org.id),
-    getMembers(org.id),
-  ]);
-  const leadList = leads ?? [];
+  const [threads, stages, members, sources] = await Promise.all([getThreadsForContact(org.id, contact.id), getStages(org.id), getMembers(org.id), getSources(org.id)]);
+  const leadList = threads.map((t) => ({ id: t.id, value: t.value, status: t.status }));
   const timeline = await getTimeline(org.id, { contactId: contact.id, leadIds: leadList.map((l) => l.id) });
 
   const canEdit = canEditRole(ctx.role);
@@ -83,9 +75,17 @@ async function ContactPageContent({ params }: PageProps<"/contacts/[id]">) {
           </div>
           {canEdit ? (
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <Link href={`/leads/new?contact=${contact.id}`} className={buttonClass("primary")}>
-                New lead
-              </Link>
+              <NewDealButton
+                label={`New deal with ${contact.first_name || name}`}
+                person={{ id: contact.id, name, email: contact.email, title: contact.title, company: contact.company?.name ?? null }}
+                options={{
+                  members,
+                  stages: stages.filter((s) => !s.is_won && !s.is_lost).map((s) => ({ id: s.id, name: s.name })),
+                  sources,
+                  currentUserId: ctx.user.id,
+                  currency: org.currency,
+                }}
+              />
               <Link href={`/contacts/${contact.id}/edit`} className={buttonClass("secondary")}>
                 Edit
               </Link>
@@ -108,29 +108,45 @@ async function ContactPageContent({ params }: PageProps<"/contacts/[id]">) {
         <div className="order-2 space-y-8 lg:order-1">
           <section>
             <div className="mb-3 flex items-baseline justify-between">
-              <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Leads</h2>
+              <h2 className="font-display text-lg font-semibold text-zinc-900 dark:text-zinc-100">Conversations</h2>
               {leadList.length ? (
                 <span className="text-xs text-zinc-500">
                   {formatMoney(openValue, org.currency)} open · {formatMoney(wonValue, org.currency)} won
                 </span>
               ) : null}
             </div>
-            {leadList.length ? (
-              <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white dark:divide-zinc-900 dark:border-zinc-800 dark:bg-zinc-950">
-                {leadList.map((lead) => (
-                  <li key={lead.id}>
-                    <Link href={`/leads/${lead.id}`} className="flex items-center gap-3 px-3 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{lead.title}</span>
-                      <StageBadge stage={stageById.get(lead.stage_id) ?? null} />
-                      <span className="w-24 text-right text-sm tabular-nums text-zinc-600 dark:text-zinc-400">
-                        {formatMoney(lead.value, lead.currency ?? org.currency)}
-                      </span>
+            {threads.length ? (
+              <ul className="space-y-2">
+                {threads.map((t) => (
+                  <li key={t.id}>
+                    <Link
+                      href={t.status === "lost" ? `/leads/${t.id}` : threadPath(t)}
+                      className="block rounded-2xl bg-white px-4 py-3 shadow-xs ring-1 ring-hairline transition-colors hover:ring-accent/40 dark:bg-zinc-900"
+                    >
+                      <p className="flex items-center gap-3">
+                        <span className="min-w-0 flex-1 truncate font-medium">{t.title}</span>
+                        <StageBadge stage={stageById.get(t.stageId) ?? null} />
+                        <span className="text-sm tabular-nums text-zinc-600 dark:text-zinc-400">{formatMoney(t.value, t.currency ?? org.currency)}</span>
+                      </p>
+                      <p className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+                        {t.status !== "open" ? (
+                          <span>Closed {t.closedAt ? formatDate(t.closedAt, org) : ""}</span>
+                        ) : t.nextStep ? (
+                          <span className={cx("truncate", t.nextStep.overdue && "text-amber-700 dark:text-amber-400")}>
+                            → {t.nextStep.body}
+                            {t.nextStep.dueAt ? ` · ${t.nextStep.overdue ? "overdue since" : "due"} ${formatDate(t.nextStep.dueAt, org)}` : ""}
+                          </span>
+                        ) : (
+                          <span className="text-amber-700 dark:text-amber-400">{t.reason === "quiet" ? `Quiet for ${t.daysQuiet} days` : REASONS[t.reason ?? ""]}</span>
+                        )}
+                        <span className="ml-auto shrink-0">Last touch {shortWhen(t.lastTouchAt, org)}</span>
+                      </p>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-zinc-500">No leads with {name} yet.</p>
+              <p className="text-sm text-zinc-500">No conversations with {name} yet.</p>
             )}
           </section>
 

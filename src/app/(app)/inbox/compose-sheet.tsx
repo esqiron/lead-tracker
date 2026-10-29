@@ -355,7 +355,14 @@ export function ComposeSheet({ open, onClose, options, prefill }: { open: boolea
                 <label htmlFor="cs-title" className={label}>
                   About
                 </label>
-                <Input id="cs-title" placeholder="e.g. Passenger booking app" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input
+                  id="cs-title"
+                  placeholder="e.g. Passenger booking app"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  // With the person already picked, start here.
+                  data-autofocus={existing ? "" : undefined}
+                />
                 {err("title")}
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

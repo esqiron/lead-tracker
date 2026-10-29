@@ -2,7 +2,9 @@
 
 An open-source lead tracker with contacts and reporting, for small teams. Self-host it on your own domain with a free Supabase project.
 
-- **Pipeline**: leads move through stages you define, and are marked won or lost.
+- **Inbox**: every lead is a conversation. Folders tell you what needs a reply, what's waiting on the other side and what's going cold. Start a conversation (person, company and deal in one go) with **C**, and log calls, emails and next steps by typing `/`.
+- **Weekly review**: a few minutes once a week, one deal at a time (still on track? close date? next step?), with the forecast before and after.
+- **Pipeline**: leads move through stages you define, and are marked won or lost. See them as a board, a table, or the inbox grouped by stage or owner.
 - **Contacts & companies**: one contact can have many leads over time.
 - **Reporting**: headline numbers vs the previous period, won/lost and new leads over time, conversion funnel, pipeline by stage, days in each stage, lost reasons, sources and a team leaderboard. Filter by period, owner and source; export any report to CSV.
 - **Teams**: invite people by email as Admin, Member or Viewer. Row Level Security enforces access in the database.
@@ -11,7 +13,7 @@ An open-source lead tracker with contacts and reporting, for small teams. Self-h
 - **Lead capture**: embeddable website forms (spam-protected, with GDPR consent) and an API for Zapier, Make, n8n or your own backend. See [docs/lead-capture.md](docs/lead-capture.md).
 - **Privacy tools**: lawful basis per contact, consent records and withdrawal, do-not-contact, per-person data export, erasure and retention rules. They help you meet GDPR obligations; compliance still depends on how you use them. See [docs/gdpr.md](docs/gdpr.md).
 
-> Status: early. Done: setup wizard, auth, invites, roles, leads (board, table, detail), contacts (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, lead capture (forms and API), reports, and privacy tools. See [SPEC.md](SPEC.md) for what comes next.
+> Status: early. Done: inbox and weekly review, setup wizard, auth, invites, roles, leads (board, table, detail), people (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, lead capture (forms and API), reports, and privacy tools. See [SPEC.md](SPEC.md) for what comes next.
 
 ## Quick start (local)
 
@@ -89,7 +91,7 @@ src/lib/auth.ts        current user/org, routing rules, page guards
 src/app/(auth)/        login, first-run setup, forgot password
 src/app/invite/        accept an invitation
 src/app/onboarding/    setup wizard steps
-src/app/(app)/         dashboard, leads, contacts, settings
+src/app/(app)/         inbox (home) and weekly review, leads (pipeline), contacts (people), reports, settings
 src/app/api/v1/        public lead capture API and form submissions
 src/app/f/             hosted, embeddable capture forms
 ```

@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, Button, cx, Input, Select } from "@/components/ui";
 import { logToThread, undoStartConversation } from "./actions";
 import { DUE_CHOICES } from "./compose-sheet";
+import { COMPOSER_EVENT } from "./inbox-panes";
 
 type Stage = { id: string; name: string; is_won: boolean; is_lost: boolean };
 
@@ -54,6 +55,18 @@ export function ThreadComposer({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
+
+  // "/" anywhere in the inbox starts a reply with the command menu open.
+  useEffect(() => {
+    const onOpen = () => {
+      setMode("note");
+      setBody("/");
+      setMenuIndex(0);
+      box.current?.focus();
+    };
+    window.addEventListener(COMPOSER_EVENT, onOpen);
+    return () => window.removeEventListener(COMPOSER_EVENT, onOpen);
+  }, []);
 
   const open = stages.filter((s) => !s.is_won && !s.is_lost);
   const current = stages.find((s) => s.id === stageId);

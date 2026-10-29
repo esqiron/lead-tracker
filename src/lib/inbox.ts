@@ -13,7 +13,17 @@ export const FOLDERS = [
   { key: "won", folder: "won", label: "Won", hint: "Closed in the last 30 days" },
 ] as const;
 
-export type FolderKey = (typeof FOLDERS)[number]["key"];
+// Views list every open conversation (and recent wins), grouped.
+export const VIEWS = [
+  { key: "by-stage", folder: null, label: "By stage", hint: "The pipeline, as conversations" },
+  { key: "by-owner", folder: null, label: "By owner", hint: "Who owes what" },
+] as const;
+
+export type FolderKey = (typeof FOLDERS)[number]["key"] | (typeof VIEWS)[number]["key"];
+
+export function isView(key: string) {
+  return VIEWS.some((v) => v.key === key);
+}
 export type Scope = "mine" | "everyone";
 
 export const SCOPES: { key: Scope; label: string }[] = [
@@ -22,7 +32,7 @@ export const SCOPES: { key: Scope; label: string }[] = [
 ];
 
 export function folderByKey(key: string) {
-  return FOLDERS.find((f) => f.key === key);
+  return FOLDERS.find((f) => f.key === key) ?? VIEWS.find((v) => v.key === key);
 }
 
 export function isScope(value: string): value is Scope {
@@ -118,9 +128,12 @@ export async function getInboxSummary(orgId: string, scope: Scope, userId: strin
 export async function getThreads(orgId: string, folderKey: FolderKey, scope: Scope, userId: string) {
   const folder = folderByKey(folderKey)!;
   const supabase = await createClient();
-  let query = scoped(threadQuery(supabase, orgId), scope, userId).eq("folder", folder.folder);
+  let query = scoped(threadQuery(supabase, orgId), scope, userId);
+  query = folder.folder ? query.eq("folder", folder.folder) : query.not("folder", "is", null);
   query =
-    folder.key === "waiting"
+    folder.folder === null
+      ? query.order("value", { ascending: false })
+      : folder.key === "waiting"
       ? query.order("next_task_due_at", { ascending: true, nullsFirst: false })
       : folder.key === "going-cold"
         ? query.order("days_quiet", { ascending: false })
@@ -148,4 +161,32 @@ export async function hasSampleData(orgId: string) {
     .is("deleted_at", null)
     .contains("tags", ["sample"]);
   return Boolean(count);
+}
+
+// Every deal with one person, newest activity first (for their People page).
+export async function getThreadsForContact(orgId: string, contactId: string) {
+  const supabase = await createClient();
+  const { data } = await threadQuery(supabase, orgId).eq("contact_id", contactId).order("last_touch_at", { ascending: false }).limit(100);
+  return (data ?? []).map(toThread);
+}
+
+// The latest weekly review answer per deal, from the last two weeks.
+export async function getRecentReviews(orgId: string, leadIds: string[]) {
+  if (!leadIds.length) return new Map<string, string>();
+  const supabase = await createClient();
+  const since = new Date(Date.now() - 14 * 864e5).toISOString();
+  const { data } = await supabase
+    .from("lead_reviews")
+    .select("lead_id, answer, reviewed_at")
+    .eq("org_id", orgId)
+    .in("lead_id", leadIds)
+    .gte("reviewed_at", since)
+    .order("reviewed_at", { ascending: true });
+  return new Map((data ?? []).map((r) => [r.lead_id, r.answer]));
+}
+
+// Where a deal's thread lives in the inbox.
+export function threadPath(thread: { id: string; folder: string | null }, scope: Scope = "everyone") {
+  const key = FOLDERS.find((f) => f.folder === thread.folder)?.key;
+  return key ? inboxPath(scope, key, thread.id) : inboxPath(scope, "by-stage", thread.id);
 }

@@ -147,8 +147,8 @@ export function ThreadView({
                     <input type="hidden" name="id" value={thread.nextStep.id} />
                     <input type="hidden" name="done" value="true" />
                     <input type="hidden" name="path" value={path} />
-                    <button type="submit" className={buttonClass("secondary", "h-8 px-3 text-xs")}>
-                      Mark done
+                    <button type="submit" data-mark-done className={buttonClass("secondary", "h-8 px-3 text-xs")}>
+                      Mark done <kbd className="text-[10px] text-zinc-400">E</kbd>
                     </button>
                   </form>
                 ) : null}

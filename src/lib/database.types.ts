@@ -113,6 +113,13 @@ export type Database = {
             foreignKeyName: "activities_org_id_lead_id_fkey"
             columns: ["org_id", "lead_id"]
             isOneToOne: false
+            referencedRelation: "lead_threads"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "activities_org_id_lead_id_fkey"
+            columns: ["org_id", "lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["org_id", "id"]
           },
@@ -644,6 +651,13 @@ export type Database = {
             foreignKeyName: "lead_stage_history_org_id_lead_id_fkey"
             columns: ["org_id", "lead_id"]
             isOneToOne: false
+            referencedRelation: "lead_threads"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "lead_stage_history_org_id_lead_id_fkey"
+            columns: ["org_id", "lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["org_id", "id"]
           },
@@ -843,6 +857,7 @@ export type Database = {
       organizations: {
         Row: {
           audit_retention_months: number | null
+          cold_after_days: number
           created_at: string
           created_by: string | null
           currency: string
@@ -852,6 +867,7 @@ export type Database = {
           logo_url: string | null
           name: string
           retention_months: number | null
+          review_day: number
           setup_completed_at: string | null
           setup_step: Database["public"]["Enums"]["setup_step"]
           slug: string
@@ -860,6 +876,7 @@ export type Database = {
         }
         Insert: {
           audit_retention_months?: number | null
+          cold_after_days?: number
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -869,6 +886,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           retention_months?: number | null
+          review_day?: number
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug: string
@@ -877,6 +895,7 @@ export type Database = {
         }
         Update: {
           audit_retention_months?: number | null
+          cold_after_days?: number
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -886,6 +905,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           retention_months?: number | null
+          review_day?: number
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug?: string
@@ -993,7 +1013,88 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      lead_threads: {
+        Row: {
+          closed_at: string | null
+          cold_after_days: number | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          currency: string | null
+          days_quiet: number | null
+          expected_close_date: string | null
+          folder: string | null
+          id: string | null
+          last_activity_at: string | null
+          last_activity_inbound: boolean | null
+          last_touch_at: string | null
+          next_task_assigned_to: string | null
+          next_task_body: string | null
+          next_task_due_at: string | null
+          next_task_due_on: string | null
+          next_task_id: string | null
+          org_id: string | null
+          owner_id: string | null
+          reason: string | null
+          source_id: string | null
+          stage_id: string | null
+          status: Database["public"]["Enums"]["lead_status"] | null
+          title: string | null
+          today: string | null
+          value: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_assigned_to_fkey"
+            columns: ["next_task_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_org_id_company_id_fkey"
+            columns: ["org_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "leads_org_id_contact_id_fkey"
+            columns: ["org_id", "contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "leads_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_org_id_source_id_fkey"
+            columns: ["org_id", "source_id"]
+            isOneToOne: false
+            referencedRelation: "lead_sources"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "leads_org_id_stage_id_fkey"
+            columns: ["org_id", "stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }

@@ -10,8 +10,8 @@ import { AppNav } from "./app-nav";
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
+      <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
           <Link href="/dashboard" className="shrink-0">
             <Logo />
           </Link>

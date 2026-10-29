@@ -1,22 +1,62 @@
 @import "tailwindcss";
 
+/* Studio look: cool slate neutrals, one lagoon-teal accent, soft layered surfaces.
+   The zinc scale is re-tinted here so every existing zinc-* class picks it up. */
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
+  --background: #eceef1;
+  --foreground: #15181d;
+  --accent: #0b7480;
+  --accent-hover: #09626c;
+  --accent-soft: #e1f0f1;
+  --accent-ink: #0a5560;
+  --hairline: rgba(21, 24, 29, 0.07);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d0f12;
+    --foreground: #eef0f2;
+    --accent: #3fb3bf;
+    --accent-hover: #5cc3cd;
+    --accent-soft: #0f2e32;
+    --accent-ink: #9fdde3;
+    --hairline: rgba(255, 255, 255, 0.08);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-hairline: var(--hairline);
+  --font-sans: var(--font-onest);
+  --font-display: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #f4f4f5;
-  }
+@theme {
+  --color-zinc-50: #f6f7f8;
+  --color-zinc-100: #eef0f2;
+  --color-zinc-200: #e2e5e9;
+  --color-zinc-300: #cdd2d9;
+  --color-zinc-400: #9aa1ad;
+  --color-zinc-500: #687080;
+  --color-zinc-600: #4f5765;
+  --color-zinc-700: #3a414d;
+  --color-zinc-800: #262b33;
+  --color-zinc-900: #15181d;
+  --color-zinc-950: #0d0f12;
+
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.5rem;
+
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-sm: 0 1px 1px rgba(16, 24, 40, 0.04), 0 2px 4px -1px rgba(16, 24, 40, 0.04), 0 16px 32px -16px rgba(16, 24, 40, 0.14);
+
+  --ease-studio: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 body {
@@ -25,21 +65,26 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+h1,
+h2 {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Chart colors (validated with the dataviz palette checks against the card
-   surfaces: #ffffff light, #09090b dark). Accent for the measure that matters,
+   surfaces: #ffffff light, #0d0f12 dark). Accent for the measure that matters,
    muted gray for context. */
 :root {
-  --viz-accent: #2a78d6;
+  --viz-accent: #0b7480;
   --viz-muted: #898781;
-  --viz-grid: #e4e4e7;
-  --viz-axis: #a1a1aa;
+  --viz-grid: #e2e5e9;
+  --viz-axis: #9aa1ad;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --viz-accent: #3987e5;
+    --viz-accent: #3fb3bf;
     --viz-muted: #898781;
-    --viz-grid: #27272a;
-    --viz-axis: #52525b;
+    --viz-grid: #262b33;
+    --viz-axis: #4f5765;
   }
 }

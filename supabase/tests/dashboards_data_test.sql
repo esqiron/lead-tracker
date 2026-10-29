@@ -1,7 +1,7 @@
 -- Dashboard data functions: numbers, parity with report(), drill-down and visibility. Run with: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(25);
 
 update public.instance_settings set allow_multiple_orgs = true, first_org_created_at = null;
 
@@ -147,6 +147,20 @@ select is(
 select is(
   tests.ids('11111111-1111-1111-1111-111111111111', $$current_setting('test.org')::uuid, '2026-03-01', '2026-03-31', null, null, 'reply', '{"waiting": true}'$$),
   array['aaaaaaaa-0000-0000-0000-00000000000e']::uuid[], 'drill: leads still waiting for a reply');
+
+-- Drill cells add up to what report() shows for the same cell.
+select is(
+  cardinality(tests.ids('11111111-1111-1111-1111-111111111111', $$current_setting('test.org')::uuid, '2026-03-01', '2026-03-31', null, null, 'lost', '{"reason": "Price"}'$$)),
+  (select (r ->> 'count')::int from jsonb_array_elements(current_setting('test.r')::jsonb -> 'lost_reasons') r where r ->> 'reason' = 'Price'),
+  'drill: a lost reason lists as many leads as report() counts');
+select is(
+  cardinality(tests.ids('11111111-1111-1111-1111-111111111111', $$current_setting('test.org')::uuid, '2026-03-01', '2026-03-31', null, null, 'open', jsonb_build_object('stage_id', tests.stage('Proposal'))$$)),
+  (select (x ->> 'count')::int from jsonb_array_elements(current_setting('test.r')::jsonb -> 'stages') x where x ->> 'name' = 'Proposal'),
+  'drill: an open stage lists as many leads as report() counts');
+select is(
+  cardinality(tests.ids('11111111-1111-1111-1111-111111111111', $$current_setting('test.org')::uuid, '2026-03-01', '2026-03-31', null, null, 'new', jsonb_build_object('split', 'source', 'key', tests.source('Website'))$$)),
+  (select (x ->> 'leads')::int from jsonb_array_elements(current_setting('test.r')::jsonb -> 'sources') x where x ->> 'name' = 'Website'),
+  'drill: new leads by source match report() sources');
 
 -- Visibility and access.
 update public.organizations set lead_visibility = 'own' where id = current_setting('test.org')::uuid;

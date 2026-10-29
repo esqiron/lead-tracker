@@ -165,3 +165,19 @@ export function newWidget(type: WidgetType, options?: Partial<Widget["options"]>
   const t = WIDGET_TYPES[type];
   return { id: Math.random().toString(36).slice(2, 10), type, span: t.span, options: { ...t.options, ...options } } as Widget;
 }
+
+// Drill-down: what's behind one number. Widgets describe each clickable cell
+// as a request; the sheet runs it through report_drill() (one call per query,
+// results merged) and lists the leads.
+export const DRILL_KINDS = ["new", "won", "lost", "open", "funnel", "aging", "reply"] as const;
+export type DrillQuery = { kind: (typeof DRILL_KINDS)[number]; params?: Record<string, string | number | boolean> };
+export type DrillRequest = {
+  // Where the number came from ("Won value · 26 Oct – 1 Nov") and what was clicked.
+  eyebrow: string;
+  title: string;
+  from: string;
+  to: string;
+  owner?: string;
+  source?: string;
+  queries: DrillQuery[];
+};

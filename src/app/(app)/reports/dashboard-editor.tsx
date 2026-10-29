@@ -17,6 +17,7 @@ import {
   type Widget,
   type WidgetType,
 } from "@/lib/dashboards";
+import { DrillProvider } from "./drill";
 import { createDashboard, deleteDashboard, duplicateDashboard, resetToTemplate, restoreDashboard, saveDashboard, saveTemplateCopy, type DashboardPatch } from "./actions";
 
 export type EditorDashboard = {
@@ -51,6 +52,7 @@ export function DashboardEditor({
   description,
   filterBar,
   deleted,
+  currency,
 }: {
   dashboard: EditorDashboard;
   // Server-rendered widget bodies by widget id.
@@ -62,6 +64,7 @@ export function DashboardEditor({
   filterBar: ReactNode;
   // A dashboard just deleted, for the Undo toast.
   deleted: string | null;
+  currency: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -269,18 +272,20 @@ export function DashboardEditor({
       {filterBar}
 
       <div className={cx("grid items-start gap-5", editing && "lg:grid-cols-[minmax(0,1fr)_20rem]")}>
-        <WidgetGrid
-          layout={layout}
-          nodes={nodes}
-          stale={stale}
-          editing={editing}
-          selected={selected}
-          onSelect={setSelected}
-          onMove={move}
-          onMoveTo={moveTo}
-          onResize={(id, span) => updateWidget(id, { span }, false)}
-          onRemove={remove}
-        />
+        <DrillProvider enabled={!editing} currency={currency}>
+          <WidgetGrid
+            layout={layout}
+            nodes={nodes}
+            stale={stale}
+            editing={editing}
+            selected={selected}
+            onSelect={setSelected}
+            onMove={move}
+            onMoveTo={moveTo}
+            onResize={(id, span) => updateWidget(id, { span }, false)}
+            onRemove={remove}
+          />
+        </DrillProvider>
         {editing ? (
           <aside
             aria-label={selectedWidget ? "Widget settings" : "Add a widget"}

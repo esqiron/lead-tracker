@@ -84,7 +84,7 @@ export function DataTable({ head, rows }: { head: string[]; rows: (string | numb
 
 export type BarRow = { key: string; label: string; value: number; display: string; detail?: string };
 
-export function BarList({ rows, empty = "No data for this period." }: { rows: BarRow[]; empty?: string }) {
+export function BarList({ rows, empty = "No data for this period.", onSelect }: { rows: BarRow[]; empty?: string; onSelect?: (row: BarRow) => void }) {
   const [active, setActive] = useState<string | null>(null);
   if (!rows.length) return <p className="py-6 text-center text-sm text-zinc-500">{empty}</p>;
   const max = Math.max(1, ...rows.map((r) => r.value));
@@ -102,10 +102,14 @@ export function BarList({ rows, empty = "No data for this period." }: { rows: Ba
             onPointerLeave={() => setActive(null)}
             onFocus={() => setActive(row.key)}
             onBlur={() => setActive(null)}
+            role={onSelect ? "button" : undefined}
+            onClick={onSelect ? () => onSelect(row) : undefined}
+            onKeyDown={onSelect ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(row); } } : undefined}
             aria-label={`${row.label}: ${row.display}${row.detail ? `, ${row.detail}` : ""}`}
             className={cx(
               "relative grid grid-cols-[minmax(5rem,9rem)_1fr_6.5rem] items-center gap-3 rounded-md px-1 py-1 outline-none",
               on && "bg-zinc-50 dark:bg-zinc-900",
+              onSelect && "cursor-pointer",
             )}
           >
             <span className="truncate text-sm text-zinc-700 dark:text-zinc-300" title={row.label}>
@@ -340,6 +344,7 @@ export function StatTile({
   delta,
   note,
   trend,
+  onSelect,
 }: {
   label: string;
   value: string;
@@ -348,11 +353,24 @@ export function StatTile({
   note?: string;
   // Values per period bucket, drawn as a sparkline under the number.
   trend?: number[];
+  // Makes the number a button (e.g. to list the leads behind it).
+  onSelect?: () => void;
 }) {
   return (
     <div className="h-full rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <p className="text-sm text-zinc-500">{label}</p>
-      <p className="mt-1.5 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{value}</p>
+      {onSelect ? (
+        <button
+          type="button"
+          onClick={onSelect}
+          title="See the leads behind this number"
+          className="mt-1.5 block rounded-md text-left text-2xl font-semibold tracking-tight text-zinc-900 decoration-zinc-300 underline-offset-4 hover:underline dark:text-zinc-100 dark:decoration-zinc-600"
+        >
+          {value}
+        </button>
+      ) : (
+        <p className="mt-1.5 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{value}</p>
+      )}
       {delta ? (
         <p
           className={cx(

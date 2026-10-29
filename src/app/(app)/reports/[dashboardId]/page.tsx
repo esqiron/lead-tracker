@@ -100,6 +100,7 @@ async function DashboardContent({ params, searchParams }: PageProps<"/reports/[d
           </div>
         }
         deleted={param(sp.deleted) ?? null}
+        currency={org.currency}
       />
     </div>
   );

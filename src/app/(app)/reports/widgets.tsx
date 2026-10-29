@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { BarList, ChartCard, ColumnChart, DataTable, LineChart, StatTile, type Series, type SeriesColor } from "@/components/charts";
+import { BarList, ChartCard, DataTable, LineChart, type Series, type SeriesColor } from "@/components/charts";
 import { kpisFor, reportFor, splitFor, type WidgetContext } from "@/lib/dashboard-data";
-import { widgetTitle, type Widget, type WidgetOf } from "@/lib/dashboards";
+import { widgetTitle, type DrillQuery, type DrillRequest, type KpiMetric, type Widget, type WidgetOf } from "@/lib/dashboards";
 import { formatMoney } from "@/lib/format";
 import { queryString } from "@/lib/list-filters";
-import { bucketLabel, winRate } from "@/lib/reports";
+import { bucketLabel, periodLabel, winRate } from "@/lib/reports";
+import { DrillBarList, DrillButton, DrillColumnChart, DrillStatTile } from "./drill";
 
 // One server component per widget type. Each reads only what it shows; the
 // shared queries are deduplicated per request (see lib/dashboard-data.ts).
@@ -51,6 +52,28 @@ function exportLink(ctx: WidgetContext, section: string) {
   );
 }
 
+// --- Drill-down requests ---------------------------------------------------------------
+
+const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
+// What a click opens: the leads behind one number, with the dashboard's filters.
+function drill(ctx: WidgetContext, source: string, title: string, queries: DrillQuery[], range?: { from: string; to: string }): DrillRequest {
+  const from = range?.from ?? ctx.filters.from;
+  const to = range?.to ?? ctx.filters.to;
+  return { eyebrow: `${source} · ${periodLabel({ ...ctx.filters, from, to })}`, title, from, to, owner: ctx.filters.owner, source: ctx.filters.source, queries };
+}
+
+// Snapshot numbers ignore the period.
+const rightNow = (request: DrillRequest): DrillRequest => ({ ...request, eyebrow: `${request.eyebrow.split(" · ")[0]} · Right now` });
+
+// A bucket's own dates, clipped to the period (the first week can start before it).
+function bucketRange(buckets: string[], i: number, f: { from: string; to: string }) {
+  const start = buckets[i]!;
+  const next = buckets[i + 1];
+  const end = next ? addDays(next, -1) : f.to;
+  return { from: start < f.from ? f.from : start, to: end > f.to ? f.to : end };
+}
+
 // --- Numbers -------------------------------------------------------------------------
 
 async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext }) {
@@ -58,18 +81,30 @@ async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext })
   const money = (n: number) => formatMoney(n, ctx.currency);
   const k = report.kpis, p = report.previous, cur = kpis.current, prev = kpis.previous, series = kpis.series;
   const label = widgetTitle(w);
+  const won = drill(ctx, label, "Won", [{ kind: "won" }]);
+  const open = rightNow(drill(ctx, label, "Open leads", [{ kind: "open" }]));
+  const request = ({
+    new_leads: drill(ctx, label, "New leads", [{ kind: "new" }]),
+    won_value: won,
+    win_rate: drill(ctx, label, "Won and lost", [{ kind: "won" }, { kind: "lost" }]),
+    avg_deal: won,
+    time_to_close: won,
+    open_value: open,
+    weighted_value: open,
+  } as Partial<Record<KpiMetric, DrillRequest>>)[w.options.metric];
   const spark = (values: (number | null)[]) => (w.options.sparkline ? carry(values) : undefined);
   const delta = <T,>(d: T) => (ctx.compare ? d : null);
 
   switch (w.options.metric) {
     case "new_leads":
-      return <StatTile label={label} value={k.new_leads.toLocaleString("en")} delta={delta(change(k.new_leads, p.new_leads))} trend={spark(series.map((s) => s.new_leads))} />;
+      return <DrillStatTile request={request} label={label} value={k.new_leads.toLocaleString("en")} delta={delta(change(k.new_leads, p.new_leads))} trend={spark(series.map((s) => s.new_leads))} />;
     case "won_value":
-      return <StatTile label={label} value={money(k.won_value)} delta={delta(change(k.won_value, p.won_value))} note={`${k.won_count} won`} trend={spark(series.map((s) => Number(s.won_value)))} />;
+      return <DrillStatTile request={request} label={label} value={money(k.won_value)} delta={delta(change(k.won_value, p.won_value))} note={`${k.won_count} won`} trend={spark(series.map((s) => Number(s.won_value)))} />;
     case "win_rate": {
       const rate = winRate(k.won_count, k.lost_count);
       return (
-        <StatTile
+        <DrillStatTile
+          request={request}
           label={label}
           value={pct(rate)}
           delta={delta(pointChange(rate, winRate(p.won_count, p.lost_count)))}
@@ -82,7 +117,8 @@ async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext })
       const avg = k.won_count ? k.won_value / k.won_count : null;
       const prevAvg = p.won_count ? p.won_value / p.won_count : null;
       return (
-        <StatTile
+        <DrillStatTile
+          request={request}
           label={label}
           value={avg === null ? "—" : money(avg)}
           delta={delta(avg !== null && prevAvg !== null ? change(avg, prevAvg) : null)}
@@ -91,10 +127,11 @@ async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext })
       );
     }
     case "open_value":
-      return <StatTile label={label} value={money(k.open_value)} note={`${k.open_count} open lead${k.open_count === 1 ? "" : "s"}`} />;
+      return <DrillStatTile request={request} label={label} value={money(k.open_value)} note={`${k.open_count} open lead${k.open_count === 1 ? "" : "s"}`} />;
     case "weighted_value":
       return (
-        <StatTile
+        <DrillStatTile
+          request={request}
           label={label}
           value={money(k.weighted_value)}
           delta={delta(change(Number(k.weighted_value), Number(prev.weighted_value), true, VS_START))}
@@ -104,7 +141,8 @@ async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext })
       );
     case "time_to_close":
       return (
-        <StatTile
+        <DrillStatTile
+          request={request}
           label={label}
           value={days(k.avg_days_to_close)}
           delta={delta(k.avg_days_to_close !== null && p.avg_days_to_close ? change(k.avg_days_to_close, p.avg_days_to_close, false) : null)}
@@ -116,13 +154,14 @@ async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext })
       const avg = k.won_count ? k.won_value / k.won_count : null;
       // Expected revenue per day from the open pipeline at the current pace.
       const v = rate !== null && avg !== null && k.avg_days_to_close ? (k.open_count * rate * avg) / Math.max(k.avg_days_to_close, 1) : null;
-      return <StatTile label={label} value={v === null ? "—" : `${money(v)}/day`} note="Open leads × win rate × avg deal ÷ days to close" />;
+      return <DrillStatTile request={request} label={label} value={v === null ? "—" : `${money(v)}/day`} note="Open leads × win rate × avg deal ÷ days to close" />;
     }
     case "activities":
-      return <StatTile label={label} value={cur.activities.toLocaleString("en")} delta={delta(change(cur.activities, prev.activities))} note="Calls, emails, notes, meetings and tasks" trend={spark(series.map((s) => s.activities))} />;
+      return <DrillStatTile request={request} label={label} value={cur.activities.toLocaleString("en")} delta={delta(change(cur.activities, prev.activities))} note="Calls, emails, notes, meetings and tasks" trend={spark(series.map((s) => s.activities))} />;
     case "median_reply":
       return (
-        <StatTile
+        <DrillStatTile
+          request={request}
           label={label}
           value={hours(cur.median_reply_hours)}
           delta={delta(cur.median_reply_hours !== null && prev.median_reply_hours ? change(cur.median_reply_hours, prev.median_reply_hours, false) : null)}
@@ -152,6 +191,8 @@ async function TrendWidget({ w, ctx }: { w: WidgetOf<"trend">; ctx: WidgetContex
   // Colour follows the source or person (their position), never their rank in
   // this result. Past the sixth, and "No source"/"No owner", fold into one muted series.
   let series: Series[];
+  // Which source or owner ids each series stands for (several for the folded one).
+  let keysOf: Record<string, (string | null)[]> = {};
   if (split === "none") {
     series = [{ key: "all", label: MEASURE[measure].title, color: "accent", values: data.buckets.map((b) => value(b, ["all"])) }];
   } else {
@@ -162,7 +203,20 @@ async function TrendWidget({ w, ctx }: { w: WidgetOf<"trend">; ctx: WidgetContex
       ...named.map((k) => ({ key: k.key!, label: k.name, color: (k.position! + 1) as SeriesColor, values: data.buckets.map((b) => value(b, [k.key])) })),
       { key: "rest", label: restLabel, color: "muted" as const, values: data.buckets.map((b) => value(b, rest.map((k) => k.key))) },
     ].filter((s) => s.values.some((v) => v > 0));
+    keysOf = Object.fromEntries([...named.map((k) => [k.key!, [k.key]]), ["rest", rest.map((k) => k.key)]]);
   }
+
+  // Each column, and each segment of it, opens its own leads.
+  const kind = measure === "new_leads" ? "new" : "won";
+  const requests: Record<string, DrillRequest> = {};
+  data.buckets.forEach((_, i) => {
+    const range = bucketRange(data.buckets, i, ctx.filters);
+    requests[String(i)] = drill(ctx, widgetTitle(w), MEASURE[measure].title, [{ kind }], range);
+    for (const s of split === "none" ? [] : series) {
+      const queries = (keysOf[s.key] ?? []).map((key): DrillQuery => ({ kind, params: { split, key: key ?? "none" } }));
+      if (queries.length) requests[`${i}:${s.key}`] = drill(ctx, widgetTitle(w), `${MEASURE[measure].title} · ${s.label}`, queries, range);
+    }
+  });
 
   const valueFormat = money ? ({ kind: "money", currency: ctx.currency } as const) : ({ kind: "number" } as const);
   const fmt = (n: number) => (money ? formatMoney(n, ctx.currency) : n);
@@ -177,7 +231,7 @@ async function TrendWidget({ w, ctx }: { w: WidgetOf<"trend">; ctx: WidgetContex
         chart === "lines" ? (
           <LineChart labels={labels} series={series} valueFormat={valueFormat} />
         ) : (
-          <ColumnChart labels={labels} series={series} valueFormat={valueFormat} stacked />
+          <DrillColumnChart labels={labels} series={series} valueFormat={valueFormat} stacked requests={requests} />
         )
       ) : (
         <p className="py-6 text-center text-sm text-zinc-500">Nothing in this period.</p>
@@ -189,6 +243,14 @@ async function TrendWidget({ w, ctx }: { w: WidgetOf<"trend">; ctx: WidgetContex
 async function WonLostWidget({ w, ctx }: { w: WidgetOf<"won_lost">; ctx: WidgetContext }) {
   const report = await reportFor(...args(ctx));
   const labels = report.timeline.map((t) => bucketLabel(t.bucket, report.bucket));
+  const buckets = report.timeline.map((t) => t.bucket);
+  const requests: Record<string, DrillRequest> = {};
+  buckets.forEach((_, i) => {
+    const range = bucketRange(buckets, i, ctx.filters);
+    requests[String(i)] = drill(ctx, widgetTitle(w), "Won and lost", [{ kind: "won" }, { kind: "lost" }], range);
+    requests[`${i}:won`] = drill(ctx, widgetTitle(w), "Won", [{ kind: "won" }], range);
+    requests[`${i}:lost`] = drill(ctx, widgetTitle(w), "Lost", [{ kind: "lost" }], range);
+  });
   return (
     <ChartCard
       title={widgetTitle(w)}
@@ -196,7 +258,8 @@ async function WonLostWidget({ w, ctx }: { w: WidgetOf<"won_lost">; ctx: WidgetC
       actions={exportLink(ctx, "timeline")}
       table={<DataTable head={["Period", "Won", "Lost"]} rows={report.timeline.map((t, i) => [labels[i]!, t.won_count, t.lost_count])} />}
     >
-      <ColumnChart
+      <DrillColumnChart
+        requests={requests}
         labels={labels}
         series={[
           { key: "won", label: "Won", color: "accent", values: report.timeline.map((t) => t.won_count) },
@@ -213,6 +276,15 @@ async function FunnelWidget({ w, ctx }: { w: WidgetOf<"funnel">; ctx: WidgetCont
   const report = await reportFor(...args(ctx));
   const created = report.kpis.new_leads;
   const step = (i: number) => (i === 0 ? created : report.funnel[i - 1]!.reached);
+  const requests: Record<string, DrillRequest> = {
+    created: drill(ctx, widgetTitle(w), "Created in this period", [{ kind: "new" }]),
+    ...Object.fromEntries(
+      report.funnel.map((f) => [
+        f.stage_id,
+        drill(ctx, widgetTitle(w), f.is_won ? "Won" : `Reached ${f.name}`, [{ kind: "funnel", params: f.is_won ? { won: true } : { stage_id: f.stage_id } }]),
+      ]),
+    ),
+  };
   return (
     <ChartCard
       title={widgetTitle(w)}
@@ -228,7 +300,8 @@ async function FunnelWidget({ w, ctx }: { w: WidgetOf<"funnel">; ctx: WidgetCont
         />
       }
     >
-      <BarList
+      <DrillBarList
+        requests={requests}
         empty="No leads were created in this period."
         rows={
           created
@@ -259,7 +332,8 @@ async function StagesWidget({ w, ctx }: { w: WidgetOf<"stages">; ctx: WidgetCont
       actions={exportLink(ctx, "stages")}
       table={<DataTable head={["Stage", "Leads", "Value", "Win chance"]} rows={report.stages.map((s) => [s.name, s.count, money(s.value), `${s.probability}%`])} />}
     >
-      <BarList
+      <DrillBarList
+        requests={Object.fromEntries(report.stages.map((s) => [s.stage_id, rightNow(drill(ctx, widgetTitle(w), `Open in ${s.name}`, [{ kind: "open", params: { stage_id: s.stage_id } }]))]))}
         empty="No open leads."
         rows={
           report.stages.some((s) => s.count)
@@ -300,7 +374,8 @@ async function LostReasonsWidget({ w, ctx }: { w: WidgetOf<"lost_reasons">; ctx:
       actions={exportLink(ctx, "lost_reasons")}
       table={<DataTable head={["Reason", "Leads", "Value"]} rows={report.lost_reasons.map((r) => [r.reason, r.count, money(r.value)])} />}
     >
-      <BarList
+      <DrillBarList
+        requests={Object.fromEntries(report.lost_reasons.map((r) => [r.reason, drill(ctx, widgetTitle(w), `Lost: ${r.reason}`, [{ kind: "lost", params: { reason: r.reason } }])]))}
         empty="No leads were lost in this period."
         rows={report.lost_reasons.map((r) => ({ key: r.reason, label: r.reason, value: r.count, display: String(r.count), detail: `${money(r.value)} in value` }))}
       />
@@ -323,7 +398,10 @@ async function SourcesWidget({ w, ctx }: { w: WidgetOf<"sources">; ctx: WidgetCo
         />
       }
     >
-      <BarList
+      <DrillBarList
+        requests={Object.fromEntries(
+          report.sources.map((s) => [s.source_id ?? "none", drill(ctx, widgetTitle(w), `New leads from ${s.name}`, [{ kind: "new", params: { split: "source", key: s.source_id ?? "none" } }])]),
+        )}
         empty="No leads were created in this period."
         rows={report.sources.map((s) => ({
           key: s.source_id ?? "none",
@@ -359,7 +437,9 @@ async function TeamWidget({ w, ctx }: { w: WidgetOf<"team">; ctx: WidgetContext 
           <tbody className="divide-y divide-zinc-100 tabular-nums dark:divide-zinc-900">
             {report.leaderboard.map((r) => (
               <tr key={r.user_id}>
-                <td className="py-2 pr-3 text-zinc-900 dark:text-zinc-100">{r.name}</td>
+                <td className="py-2 pr-3 text-zinc-900 dark:text-zinc-100">
+                  <DrillButton request={drill(ctx, widgetTitle(w), `Won by ${r.name}`, [{ kind: "won", params: { split: "owner", key: r.user_id } }])}>{r.name}</DrillButton>
+                </td>
                 <td className="py-2 pr-3">
                   <span className="flex items-center gap-2">
                     <span className="h-2.5 rounded-r-[4px]" style={{ width: `${(Number(r.won_value) / maxWon) * 70}%`, background: "var(--viz-accent)" }} />

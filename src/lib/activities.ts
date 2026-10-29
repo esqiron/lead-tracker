@@ -31,6 +31,18 @@ export type TimelineItem =
       fromStageId: string | null;
       toStageId: string | null;
       actor: string;
+    }
+  | {
+      // A weekly review answer (only the ones worth showing: see getTimeline).
+      kind: "review";
+      id: string;
+      at: string;
+      leadId: string;
+      answer: "kept" | "pushed" | "lost";
+      closeFrom: string | null;
+      closeTo: string | null;
+      lostReason: string | null;
+      actor: string;
     };
 
 const ACTIVITY_SELECT = `id, type, body, due_at, completed_at, created_at, created_by, assigned_to, source, direction, outcome,
@@ -41,7 +53,8 @@ const ACTIVITY_SELECT = `id, type, body, due_at, completed_at, created_at, creat
 const name = (p: { full_name: string | null; email: string } | null) => (p ? p.full_name || p.email : "");
 
 // Activities attached to a contact or any of the given leads, plus the stage
-// changes of those leads, newest first.
+// changes and weekly review answers of those leads, newest first. Review rows
+// that only confirm a deal that looked fine (and skips) are left out.
 export async function getTimeline(orgId: string, opts: { leadIds: string[]; contactId?: string }): Promise<TimelineItem[]> {
   const supabase = await createClient();
   const filters = [
@@ -50,7 +63,7 @@ export async function getTimeline(orgId: string, opts: { leadIds: string[]; cont
   ];
   if (!filters.length) return [];
 
-  const [{ data: activities }, { data: history }] = await Promise.all([
+  const [{ data: activities }, { data: history }, { data: reviews }] = await Promise.all([
     supabase.from("activities").select(ACTIVITY_SELECT).eq("org_id", orgId).or(filters.join(",")).order("created_at", { ascending: false }).limit(200),
     opts.leadIds.length
       ? supabase
@@ -60,6 +73,16 @@ export async function getTimeline(orgId: string, opts: { leadIds: string[]; cont
           .in("lead_id", opts.leadIds)
           .order("changed_at", { ascending: false })
           .limit(200)
+      : Promise.resolve({ data: [] }),
+    opts.leadIds.length
+      ? supabase
+          .from("lead_reviews")
+          .select("id, lead_id, reviewed_at, answer, reasons, close_from, close_to, lost_reason, actor:profiles!lead_reviews_reviewed_by_fkey(full_name, email)")
+          .eq("org_id", orgId)
+          .in("lead_id", opts.leadIds)
+          .or("answer.in.(pushed,lost),and(answer.eq.kept,reasons.neq.{})")
+          .order("reviewed_at", { ascending: false })
+          .limit(100)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -89,6 +112,17 @@ export async function getTimeline(orgId: string, opts: { leadIds: string[]; cont
       fromStageId: h.from_stage_id,
       toStageId: h.to_stage_id,
       actor: name(h.actor),
+    })),
+    ...(reviews ?? []).map((r) => ({
+      kind: "review" as const,
+      id: r.id,
+      at: r.reviewed_at,
+      leadId: r.lead_id,
+      answer: r.answer as "kept" | "pushed" | "lost",
+      closeFrom: r.close_from,
+      closeTo: r.close_to,
+      lostReason: r.lost_reason,
+      actor: name(r.actor),
     })),
   ];
   return items.sort((a, b) => b.at.localeCompare(a.at));

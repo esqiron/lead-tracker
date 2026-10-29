@@ -13,7 +13,7 @@ const TYPES = ["note", "call", "email", "meeting", "task"] as const;
 // folder counts and lists, so the whole inbox layout is refreshed.
 function revalidateRecordPath(path: string) {
   if (/^\/(leads|contacts)\/[0-9a-f-]{36}$/.test(path)) revalidatePath(path);
-  else if (/^\/inbox\/(mine|everyone)\/[a-z-]+\/[0-9a-f-]{36}$/.test(path)) revalidatePath("/inbox", "layout");
+  else if (/^\/inbox\/((mine|everyone)\/[a-z-]+|review\/[0-9a-f-]{36})\/[0-9a-f-]{36}$/.test(path)) revalidatePath("/inbox", "layout");
 }
 
 export async function addActivity(_: FormState, formData: FormData): Promise<FormState> {

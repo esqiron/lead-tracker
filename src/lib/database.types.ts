@@ -578,6 +578,101 @@ export type Database = {
           },
         ]
       }
+      lead_reviews: {
+        Row: {
+          answer: string
+          close_from: string | null
+          close_to: string | null
+          id: string
+          lead_id: string
+          lost_reason: string | null
+          next_task_id: string | null
+          org_id: string
+          reasons: string[]
+          reviewed_at: string
+          reviewed_by: string | null
+          session_id: string
+        }
+        Insert: {
+          answer: string
+          close_from?: string | null
+          close_to?: string | null
+          id?: string
+          lead_id: string
+          lost_reason?: string | null
+          next_task_id?: string | null
+          org_id: string
+          reasons?: string[]
+          reviewed_at?: string
+          reviewed_by?: string | null
+          session_id: string
+        }
+        Update: {
+          answer?: string
+          close_from?: string | null
+          close_to?: string | null
+          id?: string
+          lead_id?: string
+          lost_reason?: string | null
+          next_task_id?: string | null
+          org_id?: string
+          reasons?: string[]
+          reviewed_at?: string
+          reviewed_by?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_reviews_next_task_id_fkey"
+            columns: ["next_task_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_next_task_id_fkey"
+            columns: ["next_task_id"]
+            isOneToOne: false
+            referencedRelation: "lead_threads"
+            referencedColumns: ["next_task_id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_org_id_lead_id_fkey"
+            columns: ["org_id", "lead_id"]
+            isOneToOne: false
+            referencedRelation: "lead_threads"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_org_id_lead_id_fkey"
+            columns: ["org_id", "lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_org_id_session_id_fkey"
+            columns: ["org_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "review_sessions"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_sources: {
         Row: {
           created_at: string
@@ -1017,6 +1112,57 @@ export type Database = {
         }
         Relationships: []
       }
+      review_sessions: {
+        Row: {
+          completed_at: string | null
+          forecast_after: number | null
+          forecast_before: number
+          id: string
+          lead_count: number
+          org_id: string
+          scope: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          forecast_after?: number | null
+          forecast_before?: number
+          id?: string
+          lead_count?: number
+          org_id: string
+          scope?: string
+          started_at?: string
+          user_id?: string
+        }
+        Update: {
+          completed_at?: string | null
+          forecast_after?: number | null
+          forecast_before?: number
+          id?: string
+          lead_count?: number
+          org_id?: string
+          scope?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_sessions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       lead_threads: {
@@ -1138,6 +1284,10 @@ export type Database = {
       erase_contact: { Args: { p_contact: string }; Returns: Json }
       export_contact_data: { Args: { p_contact: string }; Returns: Json }
       export_org_data: { Args: { p_org: string }; Returns: Json }
+      finish_review: {
+        Args: { p_org: string; p_session: string }
+        Returns: undefined
+      }
       get_invitation: {
         Args: { p_token: string }
         Returns: {
@@ -1218,6 +1368,39 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      review_candidates: {
+        Args: { p_org: string; p_scope?: string }
+        Returns: {
+          company_id: string
+          contact_id: string
+          days_quiet: number
+          expected_close_date: string
+          lead_id: string
+          needs_look: boolean
+          next_task_body: string
+          next_task_id: string
+          owner_id: string
+          probability: number
+          reasons: string[]
+          stage_id: string
+          stage_position: number
+          title: string
+          value: number
+        }[]
+      }
+      review_forecast: {
+        Args: { p_org: string; p_scope?: string }
+        Returns: number
+      }
+      review_lead: {
+        Args: {
+          p_lead: string
+          p_org: string
+          p_payload: Json
+          p_session: string
+        }
+        Returns: string
+      }
       save_lead_sources: {
         Args: { p_org: string; p_sources: Json }
         Returns: undefined
@@ -1230,6 +1413,10 @@ export type Database = {
       start_conversation: {
         Args: { p_org: string; p_payload: Json }
         Returns: Json
+      }
+      start_review: {
+        Args: { p_org: string; p_scope?: string }
+        Returns: string
       }
       transfer_ownership: {
         Args: { p_new_owner: string; p_org: string }

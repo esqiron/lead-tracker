@@ -3,6 +3,7 @@ import { deleteActivity, toggleTask } from "@/app/(app)/activities/actions";
 import { cx } from "@/components/ui";
 import type { TimelineItem } from "@/lib/activities";
 import { formatDateTime } from "@/lib/format";
+import { reviewText } from "@/lib/review-text";
 
 const TYPE_LABELS = { note: "Note", call: "Call", email: "Email", meeting: "Meeting", task: "Task" } as const;
 const TYPE_ICONS = { note: "✎", call: "☎", email: "✉", meeting: "◷", task: "✓" } as const;
@@ -79,14 +80,18 @@ export function ActivityTimeline({
                   aria-hidden
                   className={cx(
                     "absolute -left-[2.0625rem] grid size-6 place-items-center rounded-full border text-xs",
-                    item.kind === "stage"
+                    item.kind !== "activity"
                       ? "border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900"
                       : "border-zinc-300 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300",
                   )}
                 >
-                  {item.kind === "stage" ? "→" : TYPE_ICONS[item.type]}
+                  {item.kind === "stage" ? "→" : item.kind === "review" ? "◎" : TYPE_ICONS[item.type]}
                 </span>
-                {item.kind === "stage" ? (
+                {item.kind === "review" ? (
+                  <p className="pt-0.5 text-sm text-zinc-500">
+                    {reviewText(item, org)} · {formatDateTime(item.at, org)}
+                  </p>
+                ) : item.kind === "stage" ? (
                   <p className="pt-0.5 text-sm text-zinc-500">
                     {item.fromStageId ? (
                       <>

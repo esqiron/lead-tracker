@@ -9,6 +9,7 @@ import { getMembers, getSources, getStages } from "@/lib/crm";
 import { env } from "@/lib/env";
 import { formatDate, formatMoney, initials, shortWhen } from "@/lib/format";
 import { FOLDERS, folderByKey, getInboxSummary, getThreads, hasSampleData, inboxPath, isScope, REASONS, SCOPES, type FolderKey } from "@/lib/inbox";
+import { countCandidates, getReviewStatus, WEEKDAYS } from "@/lib/review";
 import { createClient } from "@/lib/supabase/server";
 import { InboxPanes, ThreadLink } from "../../inbox-panes";
 import { NewMenu, StartConversationRow } from "../../new-menu";
@@ -53,13 +54,15 @@ async function Sidebar({ params }: { params: Params }) {
   const { org, role, user } = await requireReadyOrg();
   const { scope, folder } = await readParams(params);
   const canEdit = canEditRole(role);
-  const [summary, sample, stages, sources, members, formUrl] = await Promise.all([
+  const [summary, sample, stages, sources, members, formUrl, review, reviewCounts] = await Promise.all([
     getInboxSummary(org.id, scope, user.id),
     isAdminRole(role) ? hasSampleData(org.id) : Promise.resolve(false),
     canEdit ? getStages(org.id) : Promise.resolve([]),
     canEdit ? getSources(org.id) : Promise.resolve([]),
     canEdit ? getMembers(org.id) : Promise.resolve([]),
     canEdit ? getFormUrl(org.id) : Promise.resolve(null),
+    getReviewStatus(org, user.id),
+    canEdit ? countCandidates(org.id, "mine") : Promise.resolve(null),
   ]);
 
   return (
@@ -91,6 +94,28 @@ async function Sidebar({ params }: { params: Params }) {
           </Link>
         ))}
       </div>
+
+      {reviewCounts && reviewCounts.total ? (
+        <Link
+          href="/inbox/review"
+          className={cx(
+            "hidden rounded-2xl px-3 py-2.5 ring-1 transition-colors md:block",
+            review.done ? "bg-white/50 ring-hairline hover:bg-white dark:bg-zinc-900/50" : "bg-white shadow-sm ring-amber-200 hover:ring-amber-300 dark:bg-zinc-900 dark:ring-amber-900",
+          )}
+        >
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="text-sm font-medium">Weekly review</span>
+            {!review.done ? <span className="text-xs text-zinc-400">{reviewCounts.minutes} min</span> : null}
+          </span>
+          <span className={cx("block text-xs", review.done ? "text-zinc-500" : "text-amber-700 dark:text-amber-400")}>
+            {review.done
+              ? `Done ✓ · next on ${WEEKDAYS[org.review_day]}`
+              : review.openSessionId
+                ? "In progress · pick up where you left off"
+                : `Due · ${reviewCounts.needs} need${reviewCounts.needs === 1 ? "s" : ""} a look`}
+          </span>
+        </Link>
+      ) : null}
 
       <div>
         <h2 className="mb-1.5 hidden px-3 text-xs font-medium text-zinc-400 md:block">Folders</h2>

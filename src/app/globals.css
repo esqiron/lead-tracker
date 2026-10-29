@@ -71,13 +71,36 @@ h2 {
 }
 
 /* Chart colors (validated with the dataviz palette checks against the card
-   surfaces: #ffffff light, #0d0f12 dark). Accent for the measure that matters,
-   muted gray for context. */
+   surfaces: #ffffff light, #0d0f12 and #15181d dark). Accent for the measure
+   that matters, muted gray for context, viz-1..6 when series need identity.
+   viz-4 and viz-5 are under 3:1 on white, so charts using them keep a legend
+   and a table view. */
 :root {
   --viz-accent: #0b7480;
   --viz-muted: #898781;
   --viz-grid: #e2e5e9;
   --viz-axis: #9aa1ad;
+  /* Categorical slots, in fixed order: a series keeps its slot whatever the
+     filters. Slot 1 is the brand teal stepped up so it doesn't read as gray. */
+  --viz-1: #00899f;
+  --viz-2: #eb6834;
+  --viz-3: #2a78d6;
+  --viz-4: #eda100;
+  --viz-5: #e87ba4;
+  --viz-6: #6250d6;
+  /* One-hue heat ramp (counts in a grid), with the text color for each step. */
+  --heat-1: #e1f0f1;
+  --heat-2: #b5dde1;
+  --heat-3: #7cc3cb;
+  --heat-4: #3a9eab;
+  --heat-5: #0b7480;
+  --heat-6: #07505a;
+  --heat-ink-1: #15181d;
+  --heat-ink-2: #15181d;
+  --heat-ink-3: #15181d;
+  --heat-ink-4: #ffffff;
+  --heat-ink-5: #ffffff;
+  --heat-ink-6: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -86,5 +109,23 @@ h2 {
     --viz-muted: #898781;
     --viz-grid: #262b33;
     --viz-axis: #4f5765;
+    --viz-1: #2aa3b0;
+    --viz-2: #d95926;
+    --viz-3: #3987e5;
+    --viz-4: #c98500;
+    --viz-5: #d55181;
+    --viz-6: #9085e9;
+    --heat-1: #14292c;
+    --heat-2: #174149;
+    --heat-3: #1b5e68;
+    --heat-4: #22818d;
+    --heat-5: #3fb3bf;
+    --heat-6: #8fd8df;
+    --heat-ink-1: #eef0f2;
+    --heat-ink-2: #eef0f2;
+    --heat-ink-3: #eef0f2;
+    --heat-ink-4: #eef0f2;
+    --heat-ink-5: #0d0f12;
+    --heat-ink-6: #0d0f12;
   }
 }

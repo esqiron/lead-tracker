@@ -1335,6 +1335,63 @@ export type Database = {
         }
         Returns: Json
       }
+      report_activity_count: {
+        Args: {
+          p_end: string
+          p_org: string
+          p_owner: string
+          p_source: string
+          p_start: string
+        }
+        Returns: number
+      }
+      report_activity_days: {
+        Args: { p_from: string; p_org: string; p_owner?: string; p_to: string }
+        Returns: Json
+      }
+      report_aging: {
+        Args: { p_org: string; p_owner?: string; p_source?: string }
+        Returns: Json
+      }
+      report_buckets: {
+        Args: { p_bucket: string; p_end: string; p_start: string; p_tz: string }
+        Returns: {
+          bucket: string
+          bucket_end: string
+        }[]
+      }
+      report_drill: {
+        Args: {
+          p_from: string
+          p_kind: string
+          p_org: string
+          p_owner: string
+          p_params?: Json
+          p_source: string
+          p_to: string
+        }
+        Returns: string[]
+      }
+      report_first_reply: {
+        Args: {
+          p_from: string
+          p_org: string
+          p_owner?: string
+          p_source?: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      report_kpis: {
+        Args: {
+          p_from: string
+          p_org: string
+          p_owner?: string
+          p_source?: string
+          p_to: string
+        }
+        Returns: Json
+      }
       report_leads: {
         Args: { p_org: string; p_owner: string; p_source: string }
         Returns: {
@@ -1367,6 +1424,60 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      report_open_age: {
+        Args: { p_org: string; p_owner: string; p_source: string }
+        Returns: {
+          age_bucket: number
+          days: number
+          lead_id: string
+          stage_id: string
+          value: number
+        }[]
+      }
+      report_period: {
+        Args: { p_from: string; p_org: string; p_to: string }
+        Returns: Record<string, unknown>
+      }
+      report_reply_bucket: { Args: { p_hours: number }; Returns: number }
+      report_reply_hours: {
+        Args: {
+          p_end: string
+          p_org: string
+          p_owner: string
+          p_source: string
+          p_start: string
+        }
+        Returns: {
+          hours: number
+          lead_id: string
+        }[]
+      }
+      report_timeline_split: {
+        Args: {
+          p_from: string
+          p_measure?: string
+          p_org: string
+          p_owner?: string
+          p_source?: string
+          p_split?: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      report_totals: {
+        Args: {
+          p_end: string
+          p_org: string
+          p_owner: string
+          p_source: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      report_weighted_at: {
+        Args: { p_at: string; p_org: string; p_owner: string; p_source: string }
+        Returns: number
       }
       review_candidates: {
         Args: { p_org: string; p_scope?: string }

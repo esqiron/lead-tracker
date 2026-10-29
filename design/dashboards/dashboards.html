@@ -1,0 +1,1088 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lead Tracker Dashboards</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Manrope:wght@600;700&family=Onest:wght@400;500;600&display=swap">
+<style>
+/* Studio look, taken from src/app/globals.css + components/ui.tsx + components/charts.tsx.
+   Layout: the app shell (logo, pill nav), dashboard tabs + saved filters, a 12-column widget grid,
+   and in edit mode a settings drawer on the right. Charts: categorical s1–s6 validated with the
+   dataviz checks on #ffffff / #15181d; heat ramp h1–h6 is one hue (the brand teal). */
+:root {
+  --bg: #eceef1; --fg: #15181d; --surface: #ffffff; --surface-2: #f6f7f8; --surface-3: #eef0f2;
+  --line: #e2e5e9; --line-soft: #eef0f2; --hairline: rgba(21,24,29,.07);
+  --ink-2: #3a414d; --ink-3: #687080; --ink-4: #9aa1ad;
+  --accent: #0b7480; --accent-hover: #09626c; --accent-soft: #e1f0f1; --accent-ink: #0a5560;
+  --on-accent: #ffffff;
+  --good: #047857; --bad: #b91c1c; --bad-bg: #fef2f2; --warn-bg: #fffbeb; --warn-ink: #92400e;
+  --viz-grid: #e2e5e9; --viz-axis: #9aa1ad; --viz-muted: #898781;
+  --s1: #00899f; --s2: #eb6834; --s3: #2a78d6; --s4: #eda100; --s5: #e87ba4; --s6: #6250d6;
+  --h1: #e1f0f1; --h2: #b5dde1; --h3: #7cc3cb; --h4: #3a9eab; --h5: #0b7480; --h6: #07505a;
+  --h-ink-lo: #15181d; --h-ink-hi: #ffffff;
+  --pill-bg: rgba(255,255,255,.7); --pill-active: #15181d; --pill-active-ink: #ffffff;
+  --scrim: rgba(13,15,18,.32);
+  --shadow-sm: 0 1px 1px rgba(16,24,40,.04), 0 2px 4px -1px rgba(16,24,40,.04), 0 16px 32px -16px rgba(16,24,40,.14);
+  --shadow-pill: 0 10px 30px -12px rgba(16,24,40,.18);
+  --shadow-pop: 0 12px 32px -8px rgba(16,24,40,.22), 0 2px 6px rgba(16,24,40,.06);
+  --font-sans: 'Onest', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --ease: cubic-bezier(.32,.72,0,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0f12; --fg: #eef0f2; --surface: #15181d; --surface-2: #1b1f25; --surface-3: #262b33;
+    --line: #262b33; --line-soft: #1f242b; --hairline: rgba(255,255,255,.08);
+    --ink-2: #cdd2d9; --ink-3: #9aa1ad; --ink-4: #687080;
+    --accent: #3fb3bf; --accent-hover: #5cc3cd; --accent-soft: #0f2e32; --accent-ink: #9fdde3;
+    --on-accent: #0d0f12;
+    --good: #34d399; --bad: #f87171; --bad-bg: #3a1214; --warn-bg: #3a2405; --warn-ink: #fcd34d;
+    --viz-grid: #262b33; --viz-axis: #4f5765; --viz-muted: #898781;
+    --s1: #2aa3b0; --s2: #d95926; --s3: #3987e5; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+    --h1: #14292c; --h2: #174149; --h3: #1b5e68; --h4: #22818d; --h5: #3fb3bf; --h6: #8fd8df;
+    --h-ink-lo: #eef0f2; --h-ink-hi: #0d0f12;
+    --pill-bg: rgba(21,24,29,.7); --pill-active: #eef0f2; --pill-active-ink: #15181d;
+    --scrim: rgba(0,0,0,.5);
+    --shadow-sm: 0 1px 1px rgba(0,0,0,.3), 0 16px 32px -16px rgba(0,0,0,.6);
+    --shadow-pill: 0 10px 30px -12px rgba(0,0,0,.6);
+    --shadow-pop: 0 12px 32px -8px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0f12; --fg: #eef0f2; --surface: #15181d; --surface-2: #1b1f25; --surface-3: #262b33;
+  --line: #262b33; --line-soft: #1f242b; --hairline: rgba(255,255,255,.08);
+  --ink-2: #cdd2d9; --ink-3: #9aa1ad; --ink-4: #687080;
+  --accent: #3fb3bf; --accent-hover: #5cc3cd; --accent-soft: #0f2e32; --accent-ink: #9fdde3;
+  --on-accent: #0d0f12;
+  --good: #34d399; --bad: #f87171; --bad-bg: #3a1214; --warn-bg: #3a2405; --warn-ink: #fcd34d;
+  --viz-grid: #262b33; --viz-axis: #4f5765; --viz-muted: #898781;
+  --s1: #2aa3b0; --s2: #d95926; --s3: #3987e5; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+  --h1: #14292c; --h2: #174149; --h3: #1b5e68; --h4: #22818d; --h5: #3fb3bf; --h6: #8fd8df;
+  --h-ink-lo: #eef0f2; --h-ink-hi: #0d0f12;
+  --pill-bg: rgba(21,24,29,.7); --pill-active: #eef0f2; --pill-active-ink: #15181d;
+  --scrim: rgba(0,0,0,.5);
+  --shadow-sm: 0 1px 1px rgba(0,0,0,.3), 0 16px 32px -16px rgba(0,0,0,.6);
+  --shadow-pill: 0 10px 30px -12px rgba(0,0,0,.6);
+  --shadow-pop: 0 12px 32px -8px rgba(0,0,0,.7);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- shell ---------- */
+.wrap { max-width: 80rem; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.app { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+header.app .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-block: 10px; min-height: 64px; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+.logo-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: #15181d; box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 6px 14px -6px rgba(16,24,40,.5); }
+.logo-mark span { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+nav.main { display: flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--pill-bg); box-shadow: var(--shadow-pill), 0 0 0 1px var(--hairline); overflow-x: auto; max-width: 100%; }
+nav.main a { padding: 6px 14px; border-radius: 999px; font-weight: 500; color: var(--ink-3); text-decoration: none; white-space: nowrap; }
+nav.main a[aria-current] { background: var(--pill-active); color: var(--pill-active-ink); box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 4px 10px -4px rgba(16,24,40,.45); }
+.who { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--ink-3); }
+@media (max-width: 760px) { nav.main { order: 3; width: 100%; } .who .org { display: none; } }
+
+/* ---------- buttons, pills, inputs ---------- */
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; border: 0; font-weight: 500; white-space: nowrap; transition: background .3s var(--ease), color .3s var(--ease); }
+.btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 10px 22px -12px rgba(11,116,128,.8); }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.secondary { background: var(--surface); color: var(--fg); box-shadow: var(--shadow-sm), 0 0 0 1px var(--hairline); }
+.btn.secondary:hover { background: var(--surface-2); }
+.btn.ghost { background: transparent; color: var(--ink-3); }
+.btn.ghost:hover { background: var(--surface-3); color: var(--fg); }
+.btn.sm { height: 32px; padding: 0 12px; font-size: 13px; }
+.btn.danger { background: transparent; color: var(--bad); }
+.btn.danger:hover { background: var(--bad-bg); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--surface); box-shadow: 0 0 0 1px var(--hairline), var(--shadow-sm); max-width: 100%; overflow-x: auto; }
+.seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--pill-active); color: var(--pill-active-ink); }
+.seg.small button { padding: 4px 10px; font-size: 12px; }
+.sel { height: 36px; padding: 0 30px 0 14px; border-radius: 999px; border: 0; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 8l4 4 4-4' fill='none' stroke='%23898781' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center / 14px; box-shadow: 0 0 0 1px var(--hairline), var(--shadow-sm); appearance: none; font-size: 13px; font-weight: 500; max-width: 100%; }
+.field { display: grid; gap: 6px; }
+.field > label, .field > .lbl { font-size: 12px; font-weight: 500; color: var(--ink-3); letter-spacing: .01em; }
+.input { height: 38px; border-radius: 12px; border: 0; padding: 0 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); width: 100%; }
+.input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); cursor: pointer; user-select: none; }
+.toggle input { appearance: none; width: 30px; height: 18px; border-radius: 999px; background: var(--surface-3); position: relative; margin: 0; cursor: pointer; transition: background .25s var(--ease); box-shadow: inset 0 0 0 1px var(--hairline); }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .25s var(--ease); }
+.toggle input:checked { background: var(--accent); }
+.toggle input:checked::after { transform: translateX(12px); }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; background: var(--surface-3); color: var(--ink-2); }
+.badge svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.badge.won { background: var(--accent-soft); color: var(--accent-ink); }
+.badge.lost { color: var(--ink-3); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--ink-4) 60%, transparent); }
+.badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.badge.bad { background: var(--bad-bg); color: var(--bad); }
+.badge.good { background: var(--accent-soft); color: var(--accent-ink); }
+.chip-own { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); white-space: nowrap; }
+
+/* ---------- page head ---------- */
+.page { padding-block: 20px 48px; }
+.tabs-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; max-width: 100%; padding: 2px; }
+.tab { border: 0; background: transparent; padding: 7px 12px; border-radius: 10px; font-weight: 500; color: var(--ink-3); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.tab:hover { color: var(--fg); background: var(--surface-3); }
+.tab[aria-current] { color: var(--fg); background: var(--surface); box-shadow: var(--shadow-sm), 0 0 0 1px var(--hairline); }
+.tab .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.tab.add { color: var(--accent-ink); }
+.tab svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 22px; }
+.head h1 { font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -.03em; line-height: 1.15; text-wrap: balance; }
+.head .meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink-3); font-size: 13px; }
+.head .meta span { display: inline-flex; align-items: center; gap: 6px; }
+.head .meta svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.head .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.title-input { font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -.03em; border: 0; background: transparent; padding: 0 8px; margin-left: -8px; border-radius: 10px; width: min(560px, 100%); box-shadow: inset 0 0 0 1px var(--line); }
+.mock { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--warn-ink); background: var(--warn-bg); padding: 2px 8px; border-radius: 6px; }
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 18px; }
+.filters .spacer { flex: 1; }
+.filters .upd { font-size: 12px; color: var(--ink-4); }
+.editbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; padding: 10px 14px; border-radius: 14px; background: var(--accent-soft); color: var(--accent-ink); font-size: 13px; }
+.editbar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ---------- workspace + grid ---------- */
+.ws { margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.ws.editing { grid-template-columns: minmax(0, 1fr) 340px; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; align-content: start; min-width: 0; }
+.span-3 { grid-column: span 3; } .span-4 { grid-column: span 4; } .span-6 { grid-column: span 6; } .span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }
+@media (max-width: 1440px) { .ws.editing .span-3 { grid-column: span 6; } .ws.editing .span-4 { grid-column: span 6; } .ws.editing .span-8 { grid-column: span 12; } }
+@media (max-width: 1100px) { .ws.editing { grid-template-columns: minmax(0, 1fr); } .span-3 { grid-column: span 6; } .span-4 { grid-column: span 6; } .span-8 { grid-column: span 12; } }
+@media (max-width: 700px) { .grid > * { grid-column: span 12 !important; } }
+
+/* ---------- widget card (ChartCard) ---------- */
+.w { position: relative; margin: 0; min-width: 0; background: var(--surface); border-radius: 18px; padding: 18px 20px 20px; box-shadow: var(--shadow-sm), 0 0 0 1px var(--hairline); transition: box-shadow .3s var(--ease), transform .3s var(--ease); }
+.w figcaption { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.w figcaption > div:first-child { min-width: 0; }
+.w h3 { font-size: 15px; font-weight: 600; letter-spacing: -.005em; }
+.w figcaption p { margin-top: 2px; color: var(--ink-3); font-size: 13px; }
+.w .w-act { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.w .w-act button { border: 0; background: transparent; color: var(--ink-3); font-size: 12px; padding: 4px 8px; border-radius: 8px; }
+.w .w-act button:hover { background: var(--surface-3); color: var(--fg); }
+.chart { position: relative; width: 100%; min-width: 0; }
+.chart svg { display: block; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 10px; font-size: 12px; color: var(--ink-2); padding: 0; list-style: none; }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend i.line { height: 2px; width: 14px; border-radius: 2px; }
+.legend i.tick { width: 2px; height: 12px; border-radius: 1px; background: var(--fg); }
+.legend i.dash { height: 0; width: 14px; border-top: 2px dashed var(--accent); border-radius: 0; }
+.legend i.band { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+svg .tk { fill: var(--ink-3); font-size: 11px; font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+svg .lab { fill: var(--fg); font-size: 12px; font-weight: 500; font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+svg .lab-2 { fill: var(--ink-3); font-size: 11px; font-family: var(--font-sans); }
+svg .gl { stroke: var(--viz-grid); stroke-width: 1; }
+svg .bl { stroke: var(--viz-axis); stroke-width: 1; }
+svg .hl { fill: var(--surface-3); opacity: .7; }
+svg .seg-mark { cursor: pointer; }
+.w.table-on .chart, .w.table-on .legend { display: none; }
+table.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.dt th { text-align: right; font-weight: 500; font-size: 12px; color: var(--ink-3); padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.dt td { text-align: right; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line-soft); color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.dt th:first-child, table.dt td:first-child { text-align: left; color: var(--fg); }
+.tscroll { overflow-x: auto; max-height: 300px; overflow-y: auto; }
+
+/* KPI tile */
+.w.kpi { padding: 16px 18px; display: flex; flex-direction: column; gap: 2px; }
+.kpi .k-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.kpi .k-label { color: var(--ink-3); font-size: 13px; }
+.kpi .k-val { font-size: 26px; font-weight: 600; letter-spacing: -.02em; margin-top: 4px; }
+.kpi .k-delta { font-size: 12px; color: var(--ink-3); }
+.kpi .k-delta.good { color: var(--good); } .kpi .k-delta.bad { color: var(--bad); }
+.kpi .spark { margin-top: 10px; height: 40px; }
+.goal { margin-top: 12px; }
+.goal-track { position: relative; height: 10px; border-radius: 999px; background: var(--surface-3); overflow: visible; }
+.goal-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--s1); }
+.goal-pace { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--fg); border-radius: 1px; }
+.goal-txt { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--ink-3); flex-wrap: wrap; }
+
+/* lists: bars, funnel, bullet */
+.bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.bars li { display: grid; grid-template-columns: minmax(4.5rem, 8.5rem) minmax(3rem, 1fr) auto; gap: 12px; align-items: center; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
+.bars li:hover, .bars li:focus-visible { background: var(--surface-2); }
+.bars .bl-l { font-size: 13px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bars .bl-bar { height: 12px; border-radius: 0 4px 4px 0; background: var(--s1); min-width: 2px; }
+.bars .bl-v { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bars .bl-v small { color: var(--ink-3); font-size: 12px; }
+.bars li.step { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-3); padding: 0 6px 0 18px; cursor: default; }
+.bars li.step:hover { background: transparent; }
+.step svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.bullet li { grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr) 7.5rem; }
+.bullet .who-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.av { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; font-weight: 600; background: var(--surface-3); color: var(--ink-2); flex-shrink: 0; }
+.bullet .trk { position: relative; height: 22px; }
+.bullet .trk .won { position: absolute; left: 0; top: 6px; height: 10px; border-radius: 0 4px 4px 0; background: var(--s1); }
+.bullet .trk .fc { position: absolute; top: 6px; height: 10px; border-radius: 0 4px 4px 0; background: color-mix(in srgb, var(--s1) 30%, transparent); }
+.bullet .trk .q { position: absolute; top: 1px; bottom: 1px; width: 2px; border-radius: 1px; background: var(--fg); }
+.bullet li.dim { opacity: .4; }
+
+/* heat grid */
+.heat { display: grid; gap: 3px; font-size: 12px; }
+.heat .hh { color: var(--ink-3); font-size: 11px; text-align: center; padding-bottom: 2px; white-space: nowrap; }
+.heat .hh.stale { color: var(--warn-ink); }
+.heat .rl { color: var(--ink-2); display: flex; align-items: center; font-size: 13px; padding-right: 6px; white-space: nowrap; }
+.heat button.c { border: 0; height: 38px; border-radius: 6px; font-weight: 500; font-variant-numeric: tabular-nums; font-size: 13px; }
+.heat button.c.z { background: var(--surface-2); color: var(--ink-4); cursor: default; }
+.heat button.c:not(.z):hover { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--fg); }
+.heat .tot { text-align: right; color: var(--ink-3); font-variant-numeric: tabular-nums; display: flex; align-items: center; justify-content: flex-end; }
+.scale { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-3); margin-top: 12px; }
+.scale i { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* risk list */
+.risk { list-style: none; margin: 0; padding: 0; }
+.risk li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.risk li:last-child { border-bottom: 0; }
+.risk .r-t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.risk .r-s { color: var(--ink-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.risk .r-v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.risk .r-f { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.stat-line { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 12px; font-size: 13px; color: var(--ink-3); }
+.stat-line b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- edit mode ---------- */
+.editing .w { cursor: pointer; }
+.editing .w::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1.5px transparent; pointer-events: none; transition: box-shadow .2s var(--ease); }
+.editing .w:hover::after { box-shadow: inset 0 0 0 1.5px var(--line); }
+.editing .w.sel::after { box-shadow: inset 0 0 0 2px var(--accent); }
+.editing .w.dragging { opacity: .45; }
+.editing .w.drop-target::after { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px var(--accent-soft); }
+.w-tools { display: none; position: absolute; top: -12px; right: 12px; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-pop), 0 0 0 1px var(--hairline); z-index: 2; }
+.editing .w:hover .w-tools, .editing .w.sel .w-tools { display: flex; }
+.w-tools button, .w-tools span { border: 0; background: transparent; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); }
+.w-tools button:hover { background: var(--surface-3); color: var(--fg); }
+.w-tools .grip { cursor: grab; }
+.w-tools svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.w-tools .sz { width: auto; padding: 0 8px; font-size: 11px; font-weight: 600; font-family: var(--font-mono); border-radius: 999px; }
+
+.drawer { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 80px); background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-sm), 0 0 0 1px var(--hairline); padding: 18px; max-height: calc(100vh - 100px); overflow-y: auto; display: grid; gap: 16px; }
+.drawer h2 { font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.drawer .sub { color: var(--ink-3); font-size: 13px; margin-top: 2px; }
+.drawer .dh { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.ask { display: flex; gap: 6px; align-items: center; padding: 4px 4px 4px 12px; border-radius: 14px; box-shadow: 0 0 0 1px var(--line); background: var(--surface-2); }
+.ask svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ask input { border: 0; background: transparent; flex: 1; min-width: 0; height: 34px; outline: none; }
+.ask button { border: 0; height: 30px; padding: 0 10px; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600; }
+.sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+.sugg button { border: 0; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface-3); color: var(--ink-2); }
+.sugg button:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.note { font-size: 12px; color: var(--accent-ink); background: var(--accent-soft); padding: 8px 10px; border-radius: 10px; }
+.note.warn { color: var(--warn-ink); background: var(--warn-bg); }
+.lib-g { display: grid; gap: 6px; }
+.lib-g > p { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-4); margin-top: 4px; }
+.lib-i { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: center; text-align: left; border: 0; background: transparent; padding: 8px; border-radius: 12px; }
+.lib-i:hover { background: var(--surface-2); }
+.lib-i .gl-ic { width: 44px; height: 36px; border-radius: 10px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--hairline); display: grid; place-items: center; }
+.lib-i:hover .gl-ic { background: var(--surface); }
+.lib-i .gl-ic svg { width: 30px; height: 22px; }
+.lib-i b { font-weight: 500; display: block; }
+.lib-i span.d { color: var(--ink-3); font-size: 12px; display: block; }
+.set-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.drawer hr { border: 0; border-top: 1px solid var(--line); margin: 0; width: 100%; }
+@media (max-width: 1100px) {
+  .drawer { position: fixed; z-index: 25; left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); top: auto; max-height: 62vh; box-shadow: var(--shadow-pop), 0 0 0 1px var(--hairline); }
+  .ws.editing { padding-bottom: 64vh; }
+}
+
+.empty { grid-column: 1 / -1; border: 1.5px dashed var(--line); border-radius: 22px; padding: 48px 24px; text-align: center; background: color-mix(in srgb, var(--surface) 50%, transparent); }
+.empty p.t { font-weight: 600; font-size: 16px; }
+.empty p.d { color: var(--ink-3); margin: 4px auto 18px; max-width: 30rem; }
+.empty .set-row { justify-content: center; }
+
+/* ---------- drill sheet ---------- */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; animation: fade .25s var(--ease); }
+.sheet { position: fixed; z-index: 41; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--surface); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; animation: slide .35s var(--ease); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.sheet-h { padding: 20px 22px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; }
+.sheet-h .ey { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink); }
+.sheet-h h2 { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -.02em; margin-top: 4px; text-wrap: balance; }
+.sheet-h .sum { margin-top: 6px; color: var(--ink-3); font-size: 13px; }
+.sheet-b { overflow-y: auto; padding: 6px 22px 22px; flex: 1; }
+.sheet-b .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.sheet-b .row .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-b .row .s { grid-column: 1; color: var(--ink-3); font-size: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sheet-b .row .v { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+.sheet-b .row .b { grid-column: 2; grid-row: 2; justify-self: end; }
+.sheet-f { padding: 12px 22px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.icon-btn { border: 0; background: transparent; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); flex-shrink: 0; }
+.icon-btn:hover { background: var(--surface-3); color: var(--fg); }
+.icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+
+/* tooltip */
+#tip { position: fixed; z-index: 60; pointer-events: none; min-width: 150px; max-width: 260px; padding: 8px 10px; border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-pop), 0 0 0 1px var(--hairline); font-size: 12px; }
+#tip .tt { color: var(--ink-3); margin-bottom: 4px; }
+#tip .tr { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 1px 0; }
+#tip .tr span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-3); }
+#tip .tr i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+#tip .tr b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg); }
+#tip .tf { border-top: 1px solid var(--line); margin-top: 5px; padding-top: 5px; color: var(--ink-3); }
+
+nav.main, .tabs, .seg { scrollbar-width: none; }
+nav.main::-webkit-scrollbar, .tabs::-webkit-scrollbar, .seg::-webkit-scrollbar { display: none; }
+footer.foot { color: var(--ink-4); font-size: 12px; padding-block: 8px 32px; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes slide { from { transform: translateX(24px); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div id="app"></div>
+<div id="drill"></div>
+<div id="tip" hidden></div>
+
+<script>
+(function () {
+"use strict";
+
+// ---------- formatting ----------
+const DAY = 864e5;
+const TODAY = Date.UTC(2026, 9, 29);          // Thu 29 Oct 2026
+const NOW = TODAY + DAY;                      // end of today
+const QS = Date.UTC(2026, 9, 1), QE = Date.UTC(2027, 0, 1);       // Q4
+const PQS = Date.UTC(2026, 6, 1), PQE = Date.UTC(2026, 9, 1);     // Q3
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const eur = new Intl.NumberFormat("en", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const eurC = new Intl.NumberFormat("en", { style: "currency", currency: "EUR", notation: "compact", maximumFractionDigits: 1 });
+const intF = new Intl.NumberFormat("en");
+const money = (n) => (n == null ? "—" : Math.abs(n) >= 10000 ? eurC.format(n) : eur.format(n));
+const pct = (x) => (x == null ? "—" : Math.round(x * 100) + "%");
+const hours = (h) => (h == null ? "—" : h < 1 ? `${Math.round(h * 60)} min` : h < 48 ? `${h.toFixed(1)} h` : `${Math.round(h / 24)} days`);
+const dfmt = (t, o) => new Date(t).toLocaleDateString("en-GB", { timeZone: "UTC", ...(o || { day: "numeric", month: "short" }) });
+const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
+const median = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const inR = (t, a, b) => t >= a && t < b;
+const plural = (n, w) => `${intF.format(n)} ${w}${n === 1 ? "" : "s"}`;
+
+// ---------- example data (seeded, so every viewer sees the same numbers) ----------
+function mulberry(a) { return function () { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const pickW = (r, items, ws) => { let x = r() * ws.reduce((a, b) => a + b, 0); for (let i = 0; i < items.length; i++) { x -= ws[i]; if (x < 0) return items[i]; } return items[items.length - 1]; };
+
+const OWNERS = [
+  { id: "ana", name: "Ana Dobre", ini: "AD", quota: 55000 },
+  { id: "tomas", name: "Tomás Reyes", ini: "TR", quota: 45000 },
+  { id: "priya", name: "Priya Nair", ini: "PN", quota: 40000 },
+  { id: "jonas", name: "Jonas Weber", ini: "JW", quota: 25000 },
+];
+const SOURCES = [
+  { id: "referral", name: "Referral" }, { id: "website", name: "Website form" }, { id: "linkedin", name: "LinkedIn" },
+  { id: "event", name: "Event" }, { id: "cold", name: "Cold outreach" }, { id: "api", name: "API" },
+];
+const STAGES = [{ name: "New", p: 10 }, { name: "Qualified", p: 25 }, { name: "Proposal", p: 50 }, { name: "Negotiation", p: 75 }];
+const REASONS = ["Price", "Chose a competitor", "No budget", "Timing", "Went in-house", "Stopped replying"];
+const PRODUCTS = ["Warehouse dashboard", "Brand refresh", "Booking flow audit", "Driver app phase 2", "Patient intake forms", "Membership portal", "Fleet tracking pilot", "E-commerce replatform", "Annual report microsite", "Loyalty program app", "Dispatch console", "Design system retainer", "Grant portal", "Ticketing kiosk UI", "Pricing page tests", "Onboarding redesign", "Field service app", "Investor site", "Checkout rebuild", "Help centre", "Intranet refresh", "Booking widget", "Partner portal", "Menu app"];
+const COMPANIES = ["Northline Freight", "Kettle & Crumb", "Fjord Stays", "Brightline Logistics", "Clearview Clinics", "Ridgeback Climbing", "Atelier Moreau", "Open Harbour Trust", "Tessellate", "Rossi Ceramics", "Kumo Robotics", "Halden Energy", "Sable & Pine", "Marlow Dental", "Vantage Rail", "Pellucid Labs", "Orchard Credit", "Lumen Schools", "Corvid Games", "Tidewater Hotels", "Granite Legal", "Saltmarsh Foods", "Quarry Bikes"];
+const ownerById = Object.fromEntries(OWNERS.map((o) => [o.id, o]));
+const sourceById = Object.fromEntries(SOURCES.map((s) => [s.id, s]));
+
+const DEALS = (function () {
+  const r = mulberry(20261029), out = [];
+  for (let i = 0; i < 260; i++) {
+    const age = Math.floor(Math.pow(r(), 0.85) * 400);
+    const created = TODAY - age * DAY;
+    const source = pickW(r, SOURCES.map((s) => s.id), [26, 24, 16, 12, 12, 10]);
+    let owner = pickW(r, OWNERS.map((o) => o.id), [30, 26, 26, 18]);
+    if ((source === "website" || source === "api") && age < 14 && r() < 0.45) owner = null;
+    let amount = Math.exp(Math.log(2000) + r() * Math.log(15));
+    if (source === "referral") amount *= 1.3; if (source === "api") amount *= 0.6;
+    amount = Math.max(1500, Math.round(amount / 500) * 500);
+    const d = { id: "d" + i, title: PRODUCTS[Math.floor(r() * PRODUCTS.length)], company: COMPANIES[Math.floor(r() * COMPANIES.length)], source, owner, amount, created, status: "open" };
+    const len = 14 + Math.floor(r() * 70);
+    if (age > len && r() > 0.05) {
+      d.closedAt = created + len * DAY;
+      if (r() < 0.42) { d.status = "won"; d.maxStage = 4; }
+      else { d.status = "lost"; d.maxStage = Math.floor(r() * 4); d.reason = pickW(r, REASONS, [24, 20, 16, 16, 12, 12]); }
+    } else {
+      d.maxStage = age > len ? Math.floor(r() * 3) : Math.min(3, Math.floor((age / len) * 4 * (0.55 + r() * 0.6)));
+      d.inStage = Math.max(0, Math.min(age, Math.round(age * (0.15 + r() * 0.75))));
+      d.quiet = Math.min(age, r() < 0.22 ? 14 + Math.floor(r() * 30) : Math.floor(r() * 9));
+      d.expected = r() < 0.16 && age > 20 ? TODAY - (1 + Math.floor(r() * 14)) * DAY : TODAY + (4 + Math.floor(r() * 80)) * DAY;
+    }
+    if (source === "website" || source === "api") d.replyH = Math.exp(Math.log(0.2) + r() * Math.log(180));
+    out.push(d);
+  }
+  return out;
+})();
+
+// Activities per day per owner, for the last 400 days.
+const ACTS = (function () {
+  const r = mulberry(7), out = [];
+  for (let i = 399; i >= 0; i--) {
+    const t = TODAY - i * DAY, dow = new Date(t).getUTCDay();
+    const base = dow === 0 || dow === 6 ? 0.6 : dow === 1 ? 4.6 : 3.4;
+    out.push({ t, by: OWNERS.map((o, k) => Math.max(0, Math.round(base * [1.15, 1, 0.95, 0.7][k] * (0.3 + r() * 1.3) - (r() < 0.08 ? 3 : 0)))) });
+  }
+  return out;
+})();
+
+// ---------- periods ----------
+const PERIODS = { "7d": "Last 7 days", "30d": "Last 30 days", "90d": "Last 90 days", "12m": "Last 12 months" };
+function buckets(p) {
+  const bs = [];
+  if (p === "7d" || p === "30d") {
+    const n = p === "7d" ? 7 : 30;
+    for (let i = n - 1; i >= 0; i--) { const s = TODAY - i * DAY; bs.push({ start: s, end: s + DAY, label: p === "7d" ? dfmt(s, { weekday: "short" }) : dfmt(s), long: dfmt(s, { weekday: "short", day: "numeric", month: "short" }) }); }
+  } else if (p === "90d") {
+    const mon = TODAY - ((new Date(TODAY).getUTCDay() + 6) % 7) * DAY;
+    for (let i = 12; i >= 0; i--) { const s = mon - i * 7 * DAY; bs.push({ start: s, end: Math.min(s + 7 * DAY, NOW), label: dfmt(s), long: `Week of ${dfmt(s)}` }); }
+  } else {
+    for (let i = 11; i >= 0; i--) { const s = Date.UTC(2026, 9 - i, 1); bs.push({ start: s, end: Math.min(Date.UTC(2026, 10 - i, 1), NOW), label: dfmt(s, { month: "short" }), long: dfmt(s, { month: "long", year: "numeric" }) }); }
+  }
+  return bs;
+}
+function ctxFor(f) {
+  const bs = buckets(f.period), start = bs[0].start, end = bs[bs.length - 1].end;
+  const deals = DEALS.filter((d) => (f.owner === "all" || d.owner === f.owner || (f.owner === "none" && !d.owner)) && (f.source === "all" || d.source === f.source));
+  return { f, bs, start, end, prevStart: start - (end - start), prevEnd: start, deals };
+}
+const wonIn = (c, a, b) => c.deals.filter((d) => d.status === "won" && inR(d.closedAt, a, b));
+const lostIn = (c, a, b) => c.deals.filter((d) => d.status === "lost" && inR(d.closedAt, a, b));
+const createdIn = (c, a, b) => c.deals.filter((d) => inR(d.created, a, b));
+const openAt = (c, t) => c.deals.filter((d) => d.created < t && (!d.closedAt || d.closedAt >= t));
+const openNow = (c) => c.deals.filter((d) => d.status === "open");
+const prob = (d) => (d.status === "open" ? STAGES[d.maxStage].p / 100 : 0.3);
+const actsIn = (c, a, b) => { const k = OWNERS.findIndex((o) => o.id === c.f.owner); return sum(ACTS.filter((x) => inR(x.t, a, b)), (x) => (k < 0 ? sum(x.by, (v) => v) : x.by[k])); };
+const goalFor = (c, w) => (w && w.o.goal) || (c.f.owner === "all" || c.f.owner === "none" ? sum(OWNERS, (o) => o.quota) : ownerById[c.f.owner].quota);
+
+const METRICS = {
+  wonQuarter: { label: "Won this quarter", kind: "money", own: "This quarter" },
+  won: { label: "Won", kind: "money", up: true, value: (c, a, b) => sum(wonIn(c, a, b), (d) => d.amount), deals: wonIn },
+  newLeads: { label: "New leads", kind: "int", up: true, value: (c, a, b) => createdIn(c, a, b).length, deals: createdIn },
+  winRate: { label: "Win rate", kind: "pct", up: true, value: (c, a, b) => { const w = wonIn(c, a, b).length, l = lostIn(c, a, b).length; return w + l ? w / (w + l) : null; }, deals: (c, a, b) => [...wonIn(c, a, b), ...lostIn(c, a, b)] },
+  weighted: { label: "Weighted pipeline", kind: "money", up: true, at: true, own: "Right now", value: (c, a, b) => sum(openAt(c, b), (d) => d.amount * prob(d)), deals: (c) => openNow(c) },
+  avgDeal: { label: "Average deal", kind: "money", up: true, value: (c, a, b) => { const w = wonIn(c, a, b); return w.length ? sum(w, (d) => d.amount) / w.length : null; }, deals: wonIn },
+  replyTime: { label: "Median first reply", kind: "hours", up: false, value: (c, a, b) => median(createdIn(c, a, b).filter((d) => d.replyH != null).map((d) => d.replyH)), deals: (c, a, b) => createdIn(c, a, b).filter((d) => d.replyH != null) },
+  activities: { label: "Activities logged", kind: "int", up: true, value: actsIn },
+};
+const fmtKind = (k, v) => (v == null ? "—" : k === "money" ? money(v) : k === "pct" ? pct(v) : k === "hours" ? hours(v) : intF.format(Math.round(v)));
+
+// ---------- dashboards ----------
+let uid = 100;
+const W = (type, span, o = {}, title) => ({ id: "w" + uid++, type, span, o, title: title || null });
+function presets() {
+  return [
+    { id: "health", name: "Pipeline health", shared: "Shared with the team", sched: "Emailed Mondays at 08:00", f: { period: "90d", owner: "all", source: "all", compare: true }, widgets: [
+      W("kpi", 3, { metric: "wonQuarter", show: "goal" }), W("kpi", 3, { metric: "newLeads", show: "trend" }), W("kpi", 3, { metric: "winRate", show: "trend" }), W("kpi", 3, { metric: "weighted", show: "trend" }),
+      W("forecast", 8, { band: true, prev: true }), W("funnel", 4),
+      W("trend", 6, { measure: "won", split: "source", chart: "columns" }), W("aging", 6),
+      W("quota", 6), W("calendar", 6),
+      W("reply", 4), W("lost", 4), W("risk", 4),
+    ] },
+    { id: "week", name: "My week", shared: "Only you", sched: null, f: { period: "7d", owner: "ana", source: "all", compare: true }, widgets: [
+      W("kpi", 4, { metric: "activities", show: "trend" }), W("kpi", 4, { metric: "won", show: "trend" }), W("kpi", 4, { metric: "newLeads", show: "trend" }),
+      W("risk", 6), W("aging", 6), W("calendar", 12),
+    ] },
+    { id: "mkt", name: "Marketing", shared: "Shared with the team", sched: "Emailed on the 1st", f: { period: "12m", owner: "all", source: "all", compare: false }, widgets: [
+      W("kpi", 4, { metric: "newLeads", show: "trend" }), W("kpi", 4, { metric: "replyTime", show: "trend" }), W("kpi", 4, { metric: "avgDeal", show: "trend" }),
+      W("trend", 12, { measure: "new", split: "source", chart: "lines" }, "New leads by source"),
+      W("trend", 6, { measure: "won", split: "source", chart: "columns" }), W("reply", 6), W("funnel", 6), W("lost", 6),
+    ] },
+  ];
+}
+const KEY = "lt-dashboards-mock-v1";
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.dashes) { uid = s.uid || 500; return s; } } catch (e) {} return null; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ ...S, uid })); } catch (e) {} }
+let S = load() || { dashes: presets(), active: "health" };
+const UI = { edit: false, sel: null, drill: null, note: null };
+const dash = () => S.dashes.find((d) => d.id === S.active) || S.dashes[0];
+
+// ---------- icons ----------
+const ICON = {
+  pencil: '<svg viewBox="0 0 20 20"><path d="M4 16l1-4 8.5-8.5a2.1 2.1 0 013 3L8 15z"/><path d="M12 5l3 3"/></svg>',
+  share: '<svg viewBox="0 0 20 20"><circle cx="6" cy="10" r="2.2"/><circle cx="14" cy="5.5" r="2.2"/><circle cx="14" cy="14.5" r="2.2"/><path d="M8 9l4-2.4M8 11l4 2.4"/></svg>',
+  people: '<svg viewBox="0 0 20 20"><circle cx="8" cy="7.5" r="2.8"/><path d="M3.5 15.5c.6-2.6 2.4-4 4.5-4s3.9 1.4 4.5 4"/><path d="M13 5.2a2.6 2.6 0 010 5M14.5 11.8c1.2.5 2 1.8 2.3 3.7"/></svg>',
+  mail: '<svg viewBox="0 0 20 20"><rect x="3" y="5" width="14" height="10.5" rx="2"/><path d="M3.5 6l6.5 5 6.5-5"/></svg>',
+  lock: '<svg viewBox="0 0 20 20"><rect x="4.5" y="9" width="11" height="8" rx="2"/><path d="M7 9V6.5a3 3 0 016 0V9"/></svg>',
+  plus: '<svg viewBox="0 0 20 20"><path d="M10 4.5v11M4.5 10h11"/></svg>',
+  x: '<svg viewBox="0 0 20 20"><path d="M6 6l8 8M14 6l-8 8"/></svg>',
+  grip: '<svg viewBox="0 0 20 20"><circle cx="7.5" cy="5.5" r=".9"/><circle cx="12.5" cy="5.5" r=".9"/><circle cx="7.5" cy="10" r=".9"/><circle cx="12.5" cy="10" r=".9"/><circle cx="7.5" cy="14.5" r=".9"/><circle cx="12.5" cy="14.5" r=".9"/></svg>',
+  trash: '<svg viewBox="0 0 20 20"><path d="M4.5 6h11M8 6V4.5h4V6M6 6l.7 10h6.6L14 6"/></svg>',
+  sparkle: '<svg viewBox="0 0 20 20"><path d="M10 3l1.6 4.4L16 9l-4.4 1.6L10 15l-1.6-4.4L4 9l4.4-1.6z"/></svg>',
+  down: '<svg viewBox="0 0 20 20"><path d="M10 4v11M6 11l4 4 4-4"/></svg>',
+  warn: '<svg viewBox="0 0 20 20"><path d="M10 3.5l7 12.5H3z"/><path d="M10 8.5v3.5M10 14.2v.1"/></svg>',
+  clock: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.5"/><path d="M10 6.5V10l2.5 1.6"/></svg>',
+  user: '<svg viewBox="0 0 20 20"><circle cx="10" cy="7.5" r="3"/><path d="M4.5 16c.7-2.8 2.8-4.3 5.5-4.3s4.8 1.5 5.5 4.3"/></svg>',
+  check: '<svg viewBox="0 0 20 20"><path d="M5 10.5l3.2 3L15 6.5"/></svg>',
+  left: '<svg viewBox="0 0 20 20"><path d="M12 5l-5 5 5 5"/></svg>',
+  right: '<svg viewBox="0 0 20 20"><path d="M8 5l5 5-5 5"/></svg>',
+  out: '<svg viewBox="0 0 20 20"><path d="M8 4.5H5.5a1 1 0 00-1 1v9a1 1 0 001 1H8M12 7l3 3-3 3M15 10H8"/></svg>',
+};
+// Little previews for the widget library (drawn in the series colors).
+const GLYPH = {
+  kpi: '<svg viewBox="0 0 30 22"><rect x="3" y="4" width="11" height="3" rx="1.5" fill="var(--ink-4)"/><rect x="3" y="10" width="16" height="5" rx="1.5" fill="var(--fg)"/><path d="M19 18l3-3 3 1.5 3-4" fill="none" stroke="var(--s1)" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  forecast: '<svg viewBox="0 0 30 22"><path d="M2 5h26" stroke="var(--fg)" stroke-width="1"/><path d="M3 19l5-3 4-1 4-3" fill="none" stroke="var(--s1)" stroke-width="1.8" stroke-linecap="round"/><path d="M16 12l11-6" fill="none" stroke="var(--s1)" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg>',
+  trend: '<svg viewBox="0 0 30 22"><rect x="3" y="11" width="4" height="9" rx="1" fill="var(--s1)"/><rect x="3" y="7" width="4" height="3" rx="1" fill="var(--s2)"/><rect x="10" y="9" width="4" height="11" rx="1" fill="var(--s1)"/><rect x="10" y="5" width="4" height="3" rx="1" fill="var(--s2)"/><rect x="17" y="13" width="4" height="7" rx="1" fill="var(--s1)"/><rect x="17" y="10" width="4" height="2" rx="1" fill="var(--s2)"/><rect x="24" y="6" width="4" height="14" rx="1" fill="var(--s1)"/><rect x="24" y="2" width="4" height="3" rx="1" fill="var(--s2)"/></svg>',
+  funnel: '<svg viewBox="0 0 30 22"><rect x="2" y="2" width="26" height="3.5" rx="1.5" fill="var(--s1)"/><rect x="2" y="7" width="19" height="3.5" rx="1.5" fill="var(--s1)"/><rect x="2" y="12" width="12" height="3.5" rx="1.5" fill="var(--s1)"/><rect x="2" y="17" width="7" height="3.5" rx="1.5" fill="var(--s1)"/></svg>',
+  lost: '<svg viewBox="0 0 30 22"><rect x="2" y="3" width="22" height="4" rx="1.5" fill="var(--s1)"/><rect x="2" y="9" width="15" height="4" rx="1.5" fill="var(--s1)"/><rect x="2" y="15" width="9" height="4" rx="1.5" fill="var(--s1)"/></svg>',
+  quota: '<svg viewBox="0 0 30 22"><rect x="2" y="4" width="15" height="4" rx="1.5" fill="var(--s1)"/><rect x="18" y="4" width="5" height="4" rx="1.5" fill="var(--s1)" opacity=".3"/><rect x="24" y="2" width="1.6" height="8" fill="var(--fg)"/><rect x="2" y="14" width="9" height="4" rx="1.5" fill="var(--s1)"/><rect x="12" y="14" width="6" height="4" rx="1.5" fill="var(--s1)" opacity=".3"/><rect x="21" y="12" width="1.6" height="8" fill="var(--fg)"/></svg>',
+  reply: '<svg viewBox="0 0 30 22"><rect x="3" y="6" width="4" height="14" rx="1" fill="var(--s1)"/><rect x="9" y="3" width="4" height="17" rx="1" fill="var(--s1)"/><rect x="15" y="10" width="4" height="10" rx="1" fill="var(--s1)"/><rect x="21" y="15" width="4" height="5" rx="1" fill="var(--s1)"/></svg>',
+  aging: '<svg viewBox="0 0 30 22">' + [0, 1, 2, 3].map((r) => [0, 1, 2, 3, 4].map((c) => `<rect x="${2 + c * 5.4}" y="${2 + r * 5}" width="4.4" height="4" rx="1" fill="var(--h${1 + ((r * 2 + c * 3) % 5)})"/>`).join("")).join("") + "</svg>",
+  calendar: '<svg viewBox="0 0 30 22">' + [0, 1, 2, 3, 4].map((r) => [0, 1, 2, 3, 4, 5, 6].map((c) => `<rect x="${1.5 + c * 4}" y="${1.5 + r * 4}" width="3.2" height="3.2" rx=".7" fill="var(--h${1 + ((r * 5 + c * 7) % 6)})"/>`).join("")).join("") + "</svg>",
+  risk: '<svg viewBox="0 0 30 22"><rect x="2" y="3" width="17" height="3" rx="1.5" fill="var(--fg)"/><rect x="22" y="2.5" width="6" height="4" rx="2" fill="var(--bad)"/><rect x="2" y="10" width="13" height="3" rx="1.5" fill="var(--fg)"/><rect x="22" y="9.5" width="6" height="4" rx="2" fill="var(--s4)"/><rect x="2" y="17" width="15" height="3" rx="1.5" fill="var(--fg)"/></svg>',
+};
+
+// ---------- widget types ----------
+const TYPES = {
+  kpi: { name: "Number", group: "Numbers", desc: "One figure, its change and its trend", span: 3 },
+  forecast: { name: "Quarter forecast", group: "Over time", desc: "Won so far, what the pipeline should add, and the goal", span: 8 },
+  trend: { name: "Over time", group: "Over time", desc: "Won value or new leads per period, split by source or owner", span: 6 },
+  funnel: { name: "Conversion funnel", group: "Breakdowns", desc: "How far new leads got through your stages", span: 4 },
+  lost: { name: "Lost reasons", group: "Breakdowns", desc: "Why deals were lost, and what they were worth", span: 4 },
+  quota: { name: "Team vs goal", group: "Breakdowns", desc: "Each person's won value and forecast against their goal", span: 6 },
+  reply: { name: "Time to first reply", group: "Breakdowns", desc: "How fast form and API leads hear back", span: 4 },
+  aging: { name: "Deal aging", group: "Pipeline health", desc: "Open deals by stage and time in that stage", span: 6 },
+  calendar: { name: "Activity calendar", group: "Pipeline health", desc: "Calls, emails, notes and meetings per day", span: 6 },
+  risk: { name: "Deals at risk", group: "Pipeline health", desc: "Overdue, gone quiet, or nobody owns them", span: 4 },
+};
+function wTitle(w) {
+  if (w.title) return w.title;
+  if (w.type === "kpi") return METRICS[w.o.metric].label;
+  if (w.type === "trend") return `${w.o.measure === "new" ? "New leads" : "Won value"}${w.o.split === "source" ? " by source" : w.o.split === "owner" ? " by owner" : ""}`;
+  if (w.type === "forecast") return "Q4 forecast";
+  return TYPES[w.type].name;
+}
+function wOwn(w) {
+  if (w.type === "kpi") return METRICS[w.o.metric].own || null;
+  return { forecast: "This quarter", calendar: "Last 13 weeks", aging: "Right now", risk: "Right now", quota: "This quarter" }[w.type] || null;
+}
+
+// ---------- chart plumbing ----------
+const CHARTS = new Map();
+const tip = document.getElementById("tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.hidden = false;
+  const r = tip.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+  let left = x + 14, top = y + 14;
+  if (left + r.width > vw - 8) left = x - r.width - 14;
+  if (top + r.height > vh - 8) top = y - r.height - 14;
+  tip.style.left = Math.max(8, left) + "px"; tip.style.top = Math.max(8, top) + "px";
+}
+const hideTip = () => { tip.hidden = true; };
+const tipRow = (color, label, val) => `<div class="tr"><span>${color ? `<i style="background:${color}"></i>` : ""}${esc(label)}</span><b>${val}</b></div>`;
+function niceMax(m) { if (m <= 0) return 1; const s = 10 ** Math.floor(Math.log10(m)); for (const k of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (k * s >= m - 1e-9) return k * s; return 10 * s; }
+const topRound = (x, y, w, h, r) => { r = Math.min(r, w / 2, h); return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`; };
+
+// Columns (stacked) or lines over buckets. Hover shows every series; click a segment to see its deals.
+function timeChart(el, o) {
+  const Wd = Math.max(240, el.clientWidth), H = o.h || 210, n = o.labels.length;
+  const lines = o.kind === "lines", directLabels = lines && o.series.length <= 4;
+  const ml = 46, mr = directLabels ? 92 : 8, mt = 10, mb = 24, pw = Wd - ml - mr, ph = H - mt - mb, band = pw / n;
+  const totals = o.labels.map((_, i) => sum(o.series, (s) => s.values[i] || 0));
+  const max = niceMax(lines ? Math.max(1, ...o.series.flatMap((s) => s.values)) : Math.max(1, ...totals));
+  const ticks = o.count && max / 2 !== Math.round(max / 2) ? [0, max] : [0, max / 2, max];
+  const y = (v) => mt + ph - (v / max) * ph, cx = (i) => ml + band * i + band / 2;
+  let g = "";
+  for (const t of ticks) g += `<line class="${t ? "gl" : "bl"}" x1="${ml}" x2="${Wd - mr}" y1="${y(t)}" y2="${y(t)}"/><text class="tk" x="${ml - 8}" y="${y(t) + 4}" text-anchor="end">${o.fmtAxis(t)}</text>`;
+  const every = Math.ceil(n / Math.max(2, Math.floor(pw / 58)));
+  o.labels.forEach((l, i) => { if (i % every === 0) g += `<text class="tk" x="${cx(i)}" y="${H - 6}" text-anchor="middle">${esc(l)}</text>`; });
+  g += `<g class="hov"></g>`;
+  if (!lines) {
+    const bw = Math.max(3, Math.min(28, band * 0.62));
+    o.labels.forEach((_, i) => {
+      let acc = 0, first = true;
+      const drawn = o.series.map((s, k) => ({ s, k, v: s.values[i] || 0 })).filter((x) => x.v > 0);
+      drawn.forEach((x, j) => {
+        const top = y(acc + x.v); let bottom = y(acc); if (!first) bottom -= 2;
+        acc += x.v; first = false;
+        const h = bottom - top; if (h < 0.8) return;
+        const isTop = j === drawn.length - 1;
+        g += isTop ? `<path class="seg-mark" data-i="${i}" data-k="${x.s.key}" d="${topRound(cx(i) - bw / 2, top, bw, h, 4)}" fill="${x.s.color}"/>`
+                   : `<rect class="seg-mark" data-i="${i}" data-k="${x.s.key}" x="${cx(i) - bw / 2}" y="${top}" width="${bw}" height="${h}" fill="${x.s.color}"/>`;
+      });
+    });
+  } else {
+    const ends = [];
+    o.series.forEach((s) => {
+      const pts = s.values.map((v, i) => `${cx(i).toFixed(1)},${y(v || 0).toFixed(1)}`).join(" ");
+      g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const last = s.values[n - 1] || 0;
+      g += `<circle cx="${cx(n - 1)}" cy="${y(last)}" r="4" fill="${s.color}" stroke="var(--surface)" stroke-width="2"/>`;
+      ends.push({ s, yy: y(last), v: last });
+    });
+    if (directLabels) {
+      ends.sort((a, b) => a.yy - b.yy);
+      for (let i = 1; i < ends.length; i++) if (ends[i].yy - ends[i - 1].yy < 14) ends[i].yy = ends[i - 1].yy + 14;
+      const over = ends.length ? ends[ends.length - 1].yy - (mt + ph) : 0;
+      if (over > 0) ends.forEach((e) => (e.yy -= over));
+      ends.forEach((e) => { g += `<text class="lab-2" x="${cx(n - 1) + 10}" y="${e.yy + 4}">${esc(e.s.label.length > 12 ? e.s.label.slice(0, 11) + "…" : e.s.label)}</text>`; });
+    }
+  }
+  el.innerHTML = `<svg width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}" role="img" aria-label="${esc(o.aria)}">${g}</svg>`;
+  const svg = el.firstChild, hov = svg.querySelector(".hov");
+  const idx = (ev) => { const r = svg.getBoundingClientRect(); const i = Math.floor((ev.clientX - r.left - ml) / band); return i >= 0 && i < n ? i : null; };
+  svg.addEventListener("pointermove", (ev) => {
+    const i = idx(ev); if (i == null) { hov.innerHTML = ""; hideTip(); return; }
+    hov.innerHTML = lines
+      ? `<line x1="${cx(i)}" x2="${cx(i)}" y1="${mt}" y2="${mt + ph}" stroke="var(--viz-axis)"/>` + o.series.map((s) => `<circle cx="${cx(i)}" cy="${y(s.values[i] || 0)}" r="4" fill="${s.color}" stroke="var(--surface)" stroke-width="2"/>`).join("")
+      : `<rect class="hl" x="${ml + band * i}" y="${mt}" width="${band}" height="${ph}" rx="4"/>`;
+    const rows = [...o.series].reverse().map((s) => tipRow(s.color, s.label, o.fmt(s.values[i] || 0))).join("");
+    showTip(`<div class="tt">${esc(o.long[i])}</div>${rows}${o.series.length > 1 && !lines ? `<div class="tf">${tipRow(null, "Total", o.fmt(totals[i]))}</div>` : ""}${o.onPick ? `<div class="tf">Click to see the deals</div>` : ""}`, ev.clientX, ev.clientY);
+  });
+  svg.addEventListener("pointerleave", () => { hov.innerHTML = ""; hideTip(); });
+  if (o.onPick) { svg.style.cursor = "pointer"; svg.addEventListener("click", (ev) => { const i = idx(ev); if (i != null) o.onPick(i, ev.target.dataset ? ev.target.dataset.k : null); }); }
+}
+
+function sparkline(el, values, color) {
+  const Wd = Math.max(120, el.clientWidth), H = 40, n = values.length, v = values.map((x) => x || 0);
+  const max = Math.max(...v), min = Math.min(...v), span = max - min || 1;
+  const x = (i) => 3 + (i / Math.max(1, n - 1)) * (Wd - 8), y = (val) => 4 + (1 - (val - min) / span) * (H - 10);
+  const pts = v.map((val, i) => `${x(i).toFixed(1)},${y(val).toFixed(1)}`);
+  el.innerHTML = `<svg width="${Wd}" height="${H}" aria-hidden="true"><path d="M${x(0)},${H - 2}L${pts.join("L")}L${x(n - 1)},${H - 2}Z" fill="${color}" opacity=".1"/><polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(n - 1)}" cy="${y(v[n - 1])}" r="3.5" fill="${color}" stroke="var(--surface)" stroke-width="2"/></svg>`;
+}
+
+// ---------- data per widget ----------
+function trendData(w, c) {
+  const measure = w.o.measure === "new" ? "new" : "won";
+  const pick = (a, b) => (measure === "won" ? wonIn(c, a, b) : createdIn(c, a, b));
+  const val = (ds) => (measure === "won" ? sum(ds, (d) => d.amount) : ds.length);
+  let groups;
+  if (w.o.split === "source") groups = SOURCES.map((s, k) => ({ key: s.id, label: s.name, color: `var(--s${k + 1})`, test: (d) => d.source === s.id }));
+  else if (w.o.split === "owner") groups = [...OWNERS.map((o, k) => ({ key: o.id, label: o.name, color: `var(--s${k + 1})`, test: (d) => d.owner === o.id })), { key: "none", label: "No owner", color: "var(--viz-muted)", test: (d) => !d.owner }];
+  else groups = [{ key: "all", label: measure === "won" ? "Won value" : "New leads", color: "var(--s1)", test: () => true }];
+  const series = groups.map((g) => ({ ...g, values: c.bs.map((b) => val(pick(b.start, b.end).filter(g.test))) })).filter((s) => s.values.some((v) => v > 0) || groups.length === 1);
+  return { measure, series, pick, groups };
+}
+function funnelData(c) {
+  const created = createdIn(c, c.start, c.end);
+  const steps = [{ label: "Created", deals: created }];
+  STAGES.slice(1).forEach((s, k) => steps.push({ label: s.name, deals: created.filter((d) => d.maxStage >= k + 1) }));
+  steps.push({ label: "Won", deals: created.filter((d) => d.status === "won") });
+  return steps;
+}
+const AGE = [{ label: "0–7 d", min: 0, max: 7 }, { label: "8–14 d", min: 8, max: 14 }, { label: "15–30 d", min: 15, max: 30 }, { label: "31–60 d", min: 31, max: 60, stale: true }, { label: "60+ d", min: 61, max: 1e9, stale: true }];
+function riskData(c) {
+  return openNow(c).map((d) => {
+    const flags = [];
+    if (d.expected < TODAY) flags.push({ cls: "bad", icon: "warn", text: `Close date passed ${dfmt(d.expected)}` });
+    if (d.quiet >= 14) flags.push({ cls: "warn", icon: "clock", text: `Quiet ${d.quiet} days` });
+    if (!d.owner) flags.push({ cls: "warn", icon: "user", text: "No owner" });
+    return { d, flags };
+  }).filter((x) => x.flags.length).sort((a, b) => b.d.amount * (1 + b.flags.length) - a.d.amount * (1 + a.flags.length));
+}
+const REPLY = [{ label: "< 1 h", max: 1 }, { label: "1–4 h", max: 4 }, { label: "4–24 h", max: 24 }, { label: "1–3 days", max: 72 }, { label: "3+ days", max: 1e9 }];
+function forecastData(c, w) {
+  const days = Math.round((QE - QS) / DAY), ti = Math.round((NOW - QS) / DAY);
+  const cumAt = (from, list, i) => sum(list.filter((d) => d.closedAt < from + i * DAY), (d) => d.amount);
+  const won = wonIn(c, QS, NOW), prevWon = wonIn(c, PQS, PQE);
+  const open = openNow(c).map((d) => ({ d, i: Math.max(ti + 1, Math.min(days, Math.round(((d.expected < TODAY ? TODAY + 10 * DAY : d.expected) - QS) / DAY))) })).filter((x) => x.d.expected < QE);
+  const actual = [], proj = [], lo = [], hi = [], prev = [];
+  for (let i = 0; i <= days; i++) {
+    prev.push(cumAt(PQS, prevWon, i));
+    if (i <= ti) actual.push(cumAt(QS, won, i));
+    if (i >= ti) { const base = cumAt(QS, won, ti); const add = sum(open.filter((x) => x.i <= i), (x) => x.d.amount * prob(x.d)); proj.push(base + add); lo.push(base + add * 0.6); hi.push(base + add * 1.45); }
+  }
+  return { days, ti, actual, proj, lo, hi, prev, goal: goalFor(c, w), open: open.map((x) => x.d), won };
+}
+
+// ---------- widget renderers ----------
+function drillOpen(eyebrow, title, deals, kind) { UI.drill = { eyebrow, title, deals, kind }; renderDrill(); }
+
+function kpiBody(w, c) {
+  const m = METRICS[w.o.metric];
+  if (w.o.metric === "wonQuarter") {
+    const won = wonIn(c, QS, NOW), v = sum(won, (d) => d.amount), goal = goalFor(c, w);
+    const elapsed = (NOW - QS) / (QE - QS), pace = goal * elapsed, ahead = v >= pace, left = Math.round((QE - NOW) / DAY);
+    CHARTS.set(w.id, null);
+    const showGoal = w.o.show !== "number";
+    return `<div class="k-top"><span class="k-label">${esc(wTitle(w))}</span><span class="badge ${ahead ? "good" : "warn"}">${ahead ? ICON.check : ICON.warn}${ahead ? "Ahead of pace" : "Behind pace"}</span></div>
+      <button class="k-val num" data-drill="${w.id}" style="border:0;background:none;padding:0;text-align:left;cursor:pointer">${money(v)}</button>
+      <p class="k-delta">${plural(won.length, "deal")} won · ${left} days left</p>
+      ${showGoal ? `<div class="goal" title="Goal ${eur.format(goal)}"><div class="goal-track"><div class="goal-fill" style="width:${Math.min(100, (v / goal) * 100)}%"></div><div class="goal-pace" style="left:${elapsed * 100}%" title="Where you'd be on an even pace"></div></div>
+      <div class="goal-txt"><span>${pct(v / goal)} of ${money(goal)} goal</span><span>Pace mark: ${money(pace)}</span></div></div>` : ""}`;
+  }
+  const v = m.value(c, c.start, c.end);
+  let delta = "";
+  if (c.f.compare) {
+    const pv = m.at ? m.value(c, c.start, c.start) : m.value(c, c.prevStart, c.prevEnd);
+    const vs = m.at ? `vs ${dfmt(c.start)}` : "vs previous period";
+    if (v != null && pv != null) {
+      if (m.kind === "pct") { const diff = Math.round((v - pv) * 100); delta = diff ? `<p class="k-delta ${diff > 0 === m.up ? "good" : "bad"}">${diff > 0 ? "+" : "−"}${Math.abs(diff)} pts ${vs}</p>` : `<p class="k-delta">Same as previous period</p>`; }
+      else if (pv) { const r = (v - pv) / pv; delta = Math.abs(r) < 0.005 ? `<p class="k-delta">Same ${vs}</p>` : `<p class="k-delta ${r > 0 === m.up ? "good" : "bad"}">${r > 0 ? "+" : "−"}${Math.round(Math.abs(r) * 100)}% ${vs}</p>`; }
+      else delta = `<p class="k-delta">Nothing in the previous period</p>`;
+    }
+  }
+  const note = { weighted: "Value × stage win chance", activities: "Calls, emails, notes, meetings", replyTime: "Website form and API leads", winRate: "Won ÷ (won + lost)" }[w.o.metric];
+  if (!delta && note) delta = `<p class="k-delta">${note}</p>`;
+  const spark = w.o.show === "trend";
+  CHARTS.set(w.id, spark ? (el) => sparkline(el, c.bs.map((b) => m.value(c, b.start, b.end)), "var(--s1)") : null);
+  return `<div class="k-top"><span class="k-label">${esc(wTitle(w))}</span>${m.own ? `<span class="chip-own">${m.own}</span>` : ""}</div>
+    ${m.deals ? `<button class="k-val num" data-drill="${w.id}" style="border:0;background:none;padding:0;text-align:left;cursor:pointer">${fmtKind(m.kind, v)}</button>` : `<p class="k-val num">${fmtKind(m.kind, v)}</p>`}
+    ${delta}${spark ? `<div class="spark chart" data-chart="${w.id}"></div>` : ""}`;
+}
+function kpiTable(w, c) {
+  const m = METRICS[w.o.metric];
+  if (w.o.metric === "wonQuarter") return { head: ["Deal", "Closed", "Value"], rows: wonIn(c, QS, NOW).map((d) => [d.title, dfmt(d.closedAt), eur.format(d.amount)]) };
+  return { head: ["Period", m.label], rows: c.bs.map((b) => [b.long, fmtKind(m.kind, m.value(c, b.start, b.end))]) };
+}
+
+function trendBody(w, c) {
+  const t = trendData(w, c), fmt = t.measure === "won" ? money : (v) => intF.format(v);
+  const legend = t.series.length > 1 ? `<ul class="legend">${t.series.map((s) => `<li><i style="background:${s.color}"></i>${esc(s.label)}</li>`).join("")}</ul>` : "";
+  CHARTS.set(w.id, (el) => timeChart(el, {
+    labels: c.bs.map((b) => b.label), long: c.bs.map((b) => b.long), series: t.series, kind: w.o.chart === "lines" ? "lines" : "columns", count: t.measure === "new",
+    fmt, fmtAxis: t.measure === "won" ? (v) => (v ? eurC.format(v) : "0") : (v) => intF.format(v), aria: wTitle(w),
+    onPick: (i, k) => { const b = c.bs[i]; const g = t.groups.find((x) => x.key === k); const ds = t.pick(b.start, b.end).filter(g ? g.test : () => true); drillOpen(b.long, `${t.measure === "won" ? "Won" : "New leads"}${g && t.series.length > 1 ? ` · ${g.label}` : ""}`, ds, t.measure); },
+  }));
+  return `${legend}<div class="chart" data-chart="${w.id}"></div>`;
+}
+function trendTable(w, c) { const t = trendData(w, c), f = t.measure === "won" ? (v) => eur.format(v) : (v) => v; return { head: ["Period", ...t.series.map((s) => s.label)], rows: c.bs.map((b, i) => [b.long, ...t.series.map((s) => f(s.values[i]))]) }; }
+
+function forecastBody(w, c) {
+  const F = forecastData(c, w);
+  const end = F.proj[F.proj.length - 1];
+  const legend = `<ul class="legend"><li><i class="line" style="background:var(--s1)"></i>Won so far</li><li><i class="dash"></i>Forecast</li>${w.o.band !== false ? `<li><i class="band"></i>Likely range</li>` : ""}${w.o.prev ? `<li><i class="line" style="background:var(--viz-muted)"></i>Q3</li>` : ""}<li><i class="tick"></i>Goal</li></ul>`;
+  CHARTS.set(w.id, (el) => {
+    const Wd = Math.max(280, el.clientWidth), H = 250, ml = 46, mr = 96, mt = 16, mb = 24, pw = Wd - ml - mr, ph = H - mt - mb;
+    const max = niceMax(Math.max(F.goal * 1.08, F.hi[F.hi.length - 1], w.o.prev ? F.prev[F.days] : 0));
+    const x = (i) => ml + (i / F.days) * pw, y = (v) => mt + ph - (v / max) * ph;
+    const path = (arr, off = 0) => arr.map((v, k) => `${k ? "L" : "M"}${x(k + off).toFixed(1)},${y(v).toFixed(1)}`).join("");
+    let g = "";
+    for (const t of [0, max / 2, max]) g += `<line class="${t ? "gl" : "bl"}" x1="${ml}" x2="${Wd - mr}" y1="${y(t)}" y2="${y(t)}"/><text class="tk" x="${ml - 8}" y="${y(t) + 4}" text-anchor="end">${t ? eurC.format(t) : "0"}</text>`;
+    [[0, "Oct"], [31, "Nov"], [61, "Dec"]].forEach(([i, l]) => { g += `<text class="tk" x="${x(i)}" y="${H - 6}">${l}</text>`; });
+    if (w.o.band !== false) g += `<path d="${path(F.hi, F.ti)}L${[...F.lo].reverse().map((v, k) => `${x(F.days - k).toFixed(1)},${y(v).toFixed(1)}`).join("L")}Z" fill="var(--s1)" opacity=".12"/>`;
+    if (w.o.prev) g += `<path d="${path(F.prev)}" fill="none" stroke="var(--viz-muted)" stroke-width="1.5" stroke-linejoin="round"/>`;
+    g += `<line x1="${ml}" x2="${Wd - mr}" y1="${y(F.goal)}" y2="${y(F.goal)}" stroke="var(--fg)" stroke-width="1"/><text class="lab" x="${Wd - mr + 8}" y="${y(F.goal) + 4}">Goal ${eurC.format(F.goal)}</text>`;
+    g += `<path d="${path(F.actual)}L${x(F.ti)},${y(0)}L${x(0)},${y(0)}Z" fill="var(--s1)" opacity=".1"/>`;
+    g += `<path d="${path(F.actual)}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>`;
+    g += `<path d="${path(F.proj, F.ti)}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>`;
+    g += `<line x1="${x(F.ti)}" x2="${x(F.ti)}" y1="${mt}" y2="${mt + ph}" stroke="var(--viz-axis)"/><text class="lab-2" x="${x(F.ti) + 6}" y="${mt + 2}">Today</text>`;
+    const a = F.actual[F.ti];
+    g += `<circle cx="${x(F.ti)}" cy="${y(a)}" r="4.5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/><text class="lab" x="${x(F.ti) - 8}" y="${y(a) - 10}" text-anchor="end">${eurC.format(a)} won</text>`;
+    let ey = y(end) + 4; if (Math.abs(ey - (y(F.goal) + 4)) < 16) ey = y(F.goal) + (end > F.goal ? -12 : 20);
+    g += `<circle cx="${x(F.days)}" cy="${y(end)}" r="4" fill="var(--surface)" stroke="var(--s1)" stroke-width="2"/><text class="lab" x="${Wd - mr + 8}" y="${ey}">${eurC.format(end)}</text><text class="lab-2" x="${Wd - mr + 8}" y="${ey + 14}">forecast</text>`;
+    g += `<g class="hov"></g>`;
+    el.innerHTML = `<svg width="${Wd}" height="${H}" role="img" aria-label="Quarter forecast: ${eurC.format(a)} won so far, ${eurC.format(end)} forecast against a ${eurC.format(F.goal)} goal">${g}</svg>`;
+    const svg = el.firstChild, hov = svg.querySelector(".hov");
+    svg.addEventListener("pointermove", (ev) => {
+      const r = svg.getBoundingClientRect(); const i = Math.round(((ev.clientX - r.left - ml) / pw) * F.days);
+      if (i < 0 || i > F.days) { hov.innerHTML = ""; hideTip(); return; }
+      const v = i <= F.ti ? F.actual[i] : F.proj[i - F.ti];
+      hov.innerHTML = `<line x1="${x(i)}" x2="${x(i)}" y1="${mt}" y2="${mt + ph}" stroke="var(--viz-axis)"/><circle cx="${x(i)}" cy="${y(v)}" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>`;
+      const rows = i <= F.ti ? tipRow("var(--s1)", "Won so far", money(v)) : tipRow("var(--s1)", "Forecast", money(v)) + tipRow(null, "Range", `${eurC.format(F.lo[i - F.ti])}–${eurC.format(F.hi[i - F.ti])}`);
+      showTip(`<div class="tt">${dfmt(QS + i * DAY, { weekday: "short", day: "numeric", month: "short" })}</div>${rows}${w.o.prev ? tipRow("var(--viz-muted)", "Q3 at this point", money(F.prev[i])) : ""}${tipRow(null, "Goal", money(F.goal))}`, ev.clientX, ev.clientY);
+    });
+    svg.addEventListener("pointerleave", () => { hov.innerHTML = ""; hideTip(); });
+  });
+  const gap = end - F.goal;
+  return `<div class="stat-line"><span>Won <b>${money(F.actual[F.ti])}</b></span><span>Forecast <b>${money(end)}</b></span><span>${gap >= 0 ? `<span class="badge good">${ICON.check}${money(gap)} over goal</span>` : `<span class="badge warn">${ICON.warn}${money(-gap)} short of goal</span>`}</span><span>${plural(F.open.length, "open deal")} expected to close this quarter</span></div>${legend}<div class="chart" data-chart="${w.id}"></div>`;
+}
+function forecastTable(w, c) { const F = forecastData(c, w); const rows = []; for (let i = 0; i <= F.days; i += 7) rows.push([dfmt(QS + i * DAY), i <= F.ti ? eur.format(F.actual[i]) : "—", i >= F.ti ? eur.format(F.proj[i - F.ti]) : "—", eur.format(F.prev[i])]); return { head: ["Date", "Won so far", "Forecast", "Q3 at this point"], rows }; }
+
+function funnelBody(w, c) {
+  const steps = funnelData(c), n0 = steps[0].deals.length;
+  if (!n0) return `<p style="color:var(--ink-3);padding:24px 0;text-align:center">No leads were created in this period.</p>`;
+  return `<ul class="bars">${steps.map((s, k) => {
+    const prev = k ? steps[k - 1].deals.length : null, n = s.deals.length;
+    return `${k ? `<li class="step" aria-hidden="true">${ICON.down}${prev ? pct(n / prev) : "—"} moved on</li>` : ""}
+    <li tabindex="0" data-funnel="${w.id}:${k}"><span class="bl-l">${s.label}</span><span><span class="bl-bar" style="display:block;width:${(n / n0) * 100}%"></span></span><span class="bl-v">${n} <small>${pct(n / n0)}</small></span></li>`;
+  }).join("")}</ul>`;
+}
+function funnelTable(w, c) { const s = funnelData(c), n0 = s[0].deals.length; return { head: ["Step", "Leads", "Of created", "From previous"], rows: s.map((x, k) => [x.label, x.deals.length, n0 ? pct(x.deals.length / n0) : "—", k && s[k - 1].deals.length ? pct(x.deals.length / s[k - 1].deals.length) : "—"]) }; }
+
+function lostData(c) { const lost = lostIn(c, c.start, c.end); return REASONS.map((r) => ({ r, deals: lost.filter((d) => d.reason === r) })).filter((x) => x.deals.length).sort((a, b) => b.deals.length - a.deals.length); }
+function lostBody(w, c) {
+  const rows = lostData(c); if (!rows.length) return `<p style="color:var(--ink-3);padding:24px 0;text-align:center">No deals were lost in this period.</p>`;
+  const max = Math.max(...rows.map((x) => x.deals.length));
+  return `<ul class="bars">${rows.map((x, k) => `<li tabindex="0" data-lost="${k}" title="${esc(money(sum(x.deals, (d) => d.amount)))} in value"><span class="bl-l">${esc(x.r)}</span><span><span class="bl-bar" style="display:block;width:${(x.deals.length / max) * 100}%"></span></span><span class="bl-v">${x.deals.length} <small>${money(sum(x.deals, (d) => d.amount))}</small></span></li>`).join("")}</ul>`;
+}
+function lostTable(w, c) { return { head: ["Reason", "Deals", "Value"], rows: lostData(c).map((x) => [x.r, x.deals.length, eur.format(sum(x.deals, (d) => d.amount))]) }; }
+
+function quotaData(c, w) {
+  const all = { ...c, deals: DEALS.filter((d) => c.f.source === "all" || d.source === c.f.source) };
+  return OWNERS.map((o) => {
+    const mine = { ...all, deals: all.deals.filter((d) => d.owner === o.id) };
+    const won = sum(wonIn(mine, QS, NOW), (d) => d.amount);
+    const fc = sum(openNow(mine).filter((d) => d.expected < QE), (d) => d.amount * prob(d));
+    return { o, won, fc, quota: o.quota, deals: wonIn(mine, QS, NOW) };
+  });
+}
+function quotaBody(w, c) {
+  const rows = quotaData(c, w), max = Math.max(...rows.map((r) => Math.max(r.quota, r.won + r.fc))) * 1.05;
+  return `<ul class="legend"><li><i style="background:var(--s1)"></i>Won</li><li><i style="background:color-mix(in srgb, var(--s1) 30%, transparent)"></i>Forecast (weighted)</li><li><i class="tick"></i>Goal</li></ul>
+  <ul class="bars bullet">${rows.map((r) => `<li tabindex="0" data-quota="${r.o.id}" class="${c.f.owner !== "all" && c.f.owner !== r.o.id ? "dim" : ""}" title="${esc(r.o.name)}: ${money(r.won)} won, ${money(r.fc)} forecast, goal ${money(r.quota)}">
+    <span class="who-cell"><span class="av">${r.o.ini}</span><span class="bl-l">${esc(r.o.name)}</span></span>
+    <span class="trk"><span class="won" style="width:${(r.won / max) * 100}%"></span><span class="fc" style="left:calc(${(r.won / max) * 100}% + 2px);width:${(r.fc / max) * 100}%"></span><span class="q" style="left:${(r.quota / max) * 100}%"></span></span>
+    <span class="bl-v">${money(r.won)} <small>of ${money(r.quota)}</small></span></li>`).join("")}</ul>`;
+}
+function quotaTable(w, c) { return { head: ["Person", "Won", "Forecast", "Goal", "Won of goal"], rows: quotaData(c, w).map((r) => [r.o.name, eur.format(r.won), eur.format(Math.round(r.fc)), eur.format(r.quota), pct(r.won / r.quota)]) }; }
+
+function replyData(c) { const ds = createdIn(c, c.start, c.end).filter((d) => d.replyH != null); return { ds, rows: REPLY.map((b, k) => ({ ...b, deals: ds.filter((d) => d.replyH <= b.max && (k === 0 || d.replyH > REPLY[k - 1].max)) })) }; }
+function replyBody(w, c) {
+  const R = replyData(c); if (!R.ds.length) return `<p style="color:var(--ink-3);padding:24px 0;text-align:center">No form or API leads in this period.</p>`;
+  const med = median(R.ds.map((d) => d.replyH)), within = R.ds.filter((d) => d.replyH <= 4).length / R.ds.length;
+  CHARTS.set(w.id, (el) => timeChart(el, { labels: R.rows.map((r) => r.label), long: R.rows.map((r) => `Replied in ${r.label}`), series: [{ key: "n", label: "Leads", color: "var(--s1)", values: R.rows.map((r) => r.deals.length) }], kind: "columns", count: true, h: 170, fmt: (v) => intF.format(v), fmtAxis: (v) => intF.format(v), aria: "Time to first reply", onPick: (i) => drillOpen("Time to first reply", `Replied in ${R.rows[i].label}`, R.rows[i].deals, "reply") }));
+  return `<div class="stat-line"><span>Median <b>${hours(med)}</b></span><span class="badge ${within >= 0.6 ? "good" : "warn"}">${within >= 0.6 ? ICON.check : ICON.warn}${pct(within)} within 4 h</span></div><div class="chart" data-chart="${w.id}"></div>`;
+}
+function replyTable(w, c) { return { head: ["First reply", "Leads"], rows: replyData(c).rows.map((r) => [r.label, r.deals.length]) }; }
+
+function agingCells(c) { const open = openNow(c); return STAGES.map((s, si) => AGE.map((a) => open.filter((d) => d.maxStage === si && d.inStage >= a.min && d.inStage <= a.max))); }
+function agingBody(w, c) {
+  const cells = agingCells(c), max = Math.max(1, ...cells.flat().map((x) => x.length));
+  const lvl = (n) => (n ? Math.min(6, 1 + Math.floor((n / max) * 5.999)) : 0);
+  let h = `<div class="heat" style="grid-template-columns:auto repeat(5,minmax(0,1fr)) 3rem"><span></span>${AGE.map((a) => `<span class="hh ${a.stale ? "stale" : ""}">${a.label}</span>`).join("")}<span class="hh" style="text-align:right">Open</span>`;
+  STAGES.forEach((s, si) => {
+    h += `<span class="rl">${s.name}</span>`;
+    AGE.forEach((a, ai) => { const n = cells[si][ai].length, l = lvl(n); h += `<button class="c ${n ? "" : "z"}" ${n ? `data-age="${si}:${ai}"` : "disabled"} style="${n ? `background:var(--h${l});color:var(${l >= 4 ? "--h-ink-hi" : "--h-ink-lo"})` : ""}" aria-label="${s.name}, ${a.label} in stage: ${n} deals">${n || "·"}</button>`; });
+    h += `<span class="tot num">${sum(cells[si], (x) => x.length)}</span>`;
+  });
+  h += `</div><div class="scale"><span>Fewer</span>${[1, 2, 3, 4, 5, 6].map((k) => `<i style="background:var(--h${k})"></i>`).join("")}<span>More deals</span><span style="margin-left:auto;color:var(--warn-ink)">31+ days in a stage counts as stale</span></div>`;
+  return h;
+}
+function agingTable(w, c) { const cells = agingCells(c); return { head: ["Stage", ...AGE.map((a) => a.label)], rows: STAGES.map((s, si) => [s.name, ...cells[si].map((x) => x.length)]) }; }
+
+function calendarBody(w, c) {
+  const k = OWNERS.findIndex((o) => o.id === c.f.owner);
+  const first = TODAY - ((new Date(TODAY).getUTCDay() + 6) % 7) * DAY - 12 * 7 * DAY;
+  const days = ACTS.filter((x) => x.t >= first).map((x) => ({ t: x.t, n: k < 0 ? sum(x.by, (v) => v) : x.by[k] }));
+  const max = Math.max(1, ...days.map((d) => d.n)), total = sum(days, (d) => d.n);
+  const busiest = [...days].sort((a, b) => b.n - a.n)[0];
+  CHARTS.set(w.id, (el) => {
+    const Wd = Math.max(260, el.clientWidth), ml = 30, gap = 3, cs = Math.max(8, Math.min(26, (Wd - ml) / 13 - gap)), H = 7 * (cs + gap) + 20;
+    let g = "";
+    ["Mon", "", "Wed", "", "Fri", "", ""].forEach((l, r) => { if (l) g += `<text class="tk" x="0" y="${20 + r * (cs + gap) + cs / 2 + 4}">${l}</text>`; });
+    let lastM = -1;
+    days.forEach((d, i) => {
+      const col = Math.floor(i / 7), row = i % 7, m = new Date(d.t).getUTCMonth();
+      if (row === 0 && m !== lastM) { g += `<text class="tk" x="${ml + col * (cs + gap)}" y="11">${dfmt(d.t, { month: "short" })}</text>`; lastM = m; }
+      const l = d.n ? Math.min(6, 1 + Math.floor((d.n / max) * 5.999)) : 0;
+      g += `<rect data-i="${i}" x="${ml + col * (cs + gap)}" y="${20 + row * (cs + gap)}" width="${cs}" height="${cs}" rx="${Math.min(4, cs / 4)}" fill="${l ? `var(--h${l})` : "var(--surface-2)"}"${d.t === TODAY ? ' stroke="var(--fg)" stroke-width="1.5"' : ""}/>`;
+    });
+    el.innerHTML = `<svg width="${Wd}" height="${H}" role="img" aria-label="Activity calendar, ${total} activities in 13 weeks">${g}</svg>`;
+    el.firstChild.addEventListener("pointermove", (ev) => { const i = ev.target.dataset && ev.target.dataset.i; if (i == null) return hideTip(); const d = days[+i]; showTip(`<div class="tt">${dfmt(d.t, { weekday: "long", day: "numeric", month: "short" })}</div>${tipRow(null, "Activities", intF.format(d.n))}`, ev.clientX, ev.clientY); });
+    el.firstChild.addEventListener("pointerleave", hideTip);
+  });
+  return `<div class="stat-line"><span><b>${intF.format(total)}</b> activities</span><span>About <b>${Math.round(total / 65)}</b> per working day</span><span>Busiest: <b>${dfmt(busiest.t, { weekday: "short", day: "numeric", month: "short" })}</b></span></div><div class="chart" data-chart="${w.id}"></div>
+  <div class="scale"><span>Fewer</span>${[1, 2, 3, 4, 5, 6].map((k) => `<i style="background:var(--h${k})"></i>`).join("")}<span>More activities</span></div>`;
+}
+function calendarTable(w, c) { const k = OWNERS.findIndex((o) => o.id === c.f.owner); return { head: ["Week of", "Activities"], rows: Array.from({ length: 13 }, (_, i) => { const mon = TODAY - ((new Date(TODAY).getUTCDay() + 6) % 7) * DAY - (12 - i) * 7 * DAY; return [dfmt(mon), sum(ACTS.filter((x) => inR(x.t, mon, mon + 7 * DAY)), (x) => (k < 0 ? sum(x.by, (v) => v) : x.by[k]))]; }) }; }
+
+function riskBody(w, c) {
+  const rows = riskData(c); if (!rows.length) return `<p style="color:var(--ink-3);padding:24px 0;text-align:center">Nothing needs a look. Nice.</p>`;
+  const lim = w.span >= 6 ? 6 : 4;
+  return `<div class="stat-line"><span><b>${rows.length}</b> deals · <b>${money(sum(rows, (x) => x.d.amount))}</b></span></div><ul class="risk">${rows.slice(0, lim).map((x) => `<li><div style="min-width:0"><p class="r-t">${esc(x.d.title)}</p><p class="r-s">${esc(x.d.company)} · ${STAGES[x.d.maxStage].name} · ${x.d.owner ? esc(ownerById[x.d.owner].name) : "Unassigned"}</p></div><span class="r-v">${money(x.d.amount)}</span><div class="r-f">${x.flags.map((f) => `<span class="badge ${f.cls}">${ICON[f.icon]}${esc(f.text)}</span>`).join("")}</div></li>`).join("")}</ul>
+  ${rows.length > lim ? `<button class="btn ghost sm" data-risk-all="${w.id}" style="margin-top:6px">See all ${rows.length}</button>` : ""}`;
+}
+function riskTable(w, c) { return { head: ["Deal", "Stage", "Value", "Why"], rows: riskData(c).map((x) => [x.d.title, STAGES[x.d.maxStage].name, eur.format(x.d.amount), x.flags.map((f) => f.text).join("; ")]) }; }
+
+const BODY = { kpi: kpiBody, trend: trendBody, forecast: forecastBody, funnel: funnelBody, lost: lostBody, quota: quotaBody, reply: replyBody, aging: agingBody, calendar: calendarBody, risk: riskBody };
+const TABLE = { kpi: kpiTable, trend: trendTable, forecast: forecastTable, funnel: funnelTable, lost: lostTable, quota: quotaTable, reply: replyTable, aging: agingTable, calendar: calendarTable, risk: riskTable };
+const DESC = (w, c) => ({
+  trend: `${w.o.measure === "new" ? "Leads created" : "Won value, by close date"} per ${c.f.period === "90d" ? "week" : c.f.period === "12m" ? "month" : "day"}`,
+  forecast: "Oct 1 – Dec 31 · pipeline weighted by stage win chance",
+  funnel: "How far the leads created in this period got",
+  lost: "Deals lost in this period",
+  quota: "Won this quarter against each person's goal",
+  reply: "Website form and API leads created in this period",
+  aging: "Open deals by stage and days in that stage",
+  calendar: "Calls, emails, notes, meetings and tasks",
+  risk: "Open deals that need a look",
+}[w.type] || "");
+
+function htmlTable(t) { return `<div class="tscroll"><table class="dt"><thead><tr>${t.head.map((h) => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`; }
+
+function card(w, c) {
+  const sel = UI.edit && UI.sel === w.id, tbl = !!w.o.table;
+  let body;
+  try { body = tbl ? (CHARTS.set(w.id, null), htmlTable(TABLE[w.type](w, c))) : BODY[w.type](w, c); } catch (e) { console.error(e); body = `<p class="k-delta">This widget could not be drawn.</p>`; }
+  const tools = UI.edit ? `<div class="w-tools"><span class="grip" title="Drag to move">${ICON.grip}</span><button data-act="move" data-dir="-1" data-wid="${w.id}" title="Move earlier" aria-label="Move earlier">${ICON.left}</button><button data-act="move" data-dir="1" data-wid="${w.id}" title="Move later" aria-label="Move later">${ICON.right}</button><button class="sz" data-act="size" data-wid="${w.id}" title="Change width">${{ 3: "¼", 4: "⅓", 6: "½", 8: "⅔", 12: "Full" }[w.span]}</button><button data-act="remove" data-wid="${w.id}" title="Remove" aria-label="Remove widget">${ICON.trash}</button></div>` : "";
+  if (w.type === "kpi" && !tbl) return `<figure class="w kpi span-${w.span} ${sel ? "sel" : ""}" data-wid="${w.id}" ${UI.edit ? 'draggable="true"' : ""}>${tools}${body}</figure>`;
+  const own = wOwn(w);
+  return `<figure class="w span-${w.span} ${sel ? "sel" : ""} ${tbl ? "table-on" : ""}" data-wid="${w.id}" ${UI.edit ? 'draggable="true"' : ""}>${tools}
+    <figcaption><div><h3>${esc(wTitle(w))}</h3><p>${esc(DESC(w, c))}</p></div><div class="w-act">${own ? `<span class="chip-own">${own}</span>` : ""}<button data-act="table" data-wid="${w.id}" aria-pressed="${tbl}">${tbl ? "Chart" : "Table"}</button></div></figcaption>${body}</figure>`;
+}
+
+// ---------- page ----------
+function header() {
+  return `<header class="app"><div class="wrap"><span class="logo"><span class="logo-mark"><span></span></span>Lead Tracker</span>
+  <nav class="main" aria-label="Main">${["Inbox", "People", "Pipeline", "Reports", "Settings"].map((l) => `<a href="#reports" ${l === "Reports" ? 'aria-current="page"' : ""} onclick="return false">${l}</a>`).join("")}</nav>
+  <div class="who"><span class="org">Brightwater Studio · Ana Dobre</span><button class="btn ghost sm" type="button">${ICON.out}Sign out</button></div></div></header>`;
+}
+function top(D, c) {
+  const f = D.f;
+  const tabs = `<div class="tabs" role="tablist">${S.dashes.map((d) => `<button class="tab" role="tab" data-tab="${d.id}" ${d.id === D.id ? 'aria-current="page" aria-selected="true"' : 'aria-selected="false"'}>${d.id === D.id ? '<span class="dot"></span>' : ""}${esc(d.name)}</button>`).join("")}<button class="tab add" data-act="new-dash">${ICON.plus}New dashboard</button></div>`;
+  const head = UI.edit
+    ? `<div class="head"><div style="min-width:0;flex:1"><label for="dash-name" class="mock" style="display:inline-block;margin-bottom:8px">Editing</label><br><input id="dash-name" class="title-input" value="${esc(D.name)}" aria-label="Dashboard name"></div>
+       <div class="acts"><button class="btn ghost" data-act="reset">Reset to example</button><button class="btn primary" data-act="edit">${ICON.check}Done</button></div></div>
+       <div class="editbar">${ICON.sparkle}<span>Drag widgets to move them, click one to change it, or add new ones from the panel. Filters below are saved as this dashboard's defaults.</span></div>`
+    : `<div class="head"><div style="min-width:0"><h1>${esc(D.name)}</h1><div class="meta"><span>${D.shared === "Only you" ? ICON.lock : ICON.people}${esc(D.shared || "Only you")}</span>${D.sched ? `<span>${ICON.mail}${esc(D.sched)}</span>` : ""}<span class="mock">Mockup · example data</span></div></div>
+       <div class="acts"><button class="btn secondary" data-act="share">${ICON.share}Share</button><button class="btn primary" data-act="edit">${ICON.pencil}Edit dashboard</button></div></div>`;
+  const owners = [["all", "Everyone"], ...OWNERS.map((o) => [o.id, o.name]), ["none", "No owner"]];
+  const filters = `<div class="filters" role="group" aria-label="Filters">
+    <div class="seg" role="group" aria-label="Period">${Object.entries(PERIODS).map(([k, l]) => `<button data-period="${k}" aria-pressed="${f.period === k}">${l}</button>`).join("")}</div>
+    <select class="sel" id="f-owner" aria-label="Owner">${owners.map(([v, l]) => `<option value="${v}" ${f.owner === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <select class="sel" id="f-source" aria-label="Source">${[["all", "All sources"], ...SOURCES.map((s) => [s.id, s.name])].map(([v, l]) => `<option value="${v}" ${f.source === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <label class="toggle"><input type="checkbox" id="f-compare" ${f.compare ? "checked" : ""}>Compare to previous period</label>
+    <span class="spacer"></span><span class="upd">${dfmt(c.start, { day: "numeric", month: "short", year: "numeric" })} – ${dfmt(TODAY, { day: "numeric", month: "short", year: "numeric" })}</span></div>`;
+  return `<div class="tabs-row">${tabs}</div>${head}${filters}`;
+}
+function emptyState() {
+  return `<div class="empty"><p class="t">Start with a template or add your first widget</p><p class="d">Every widget reads the same leads, stages and activities the rest of Lead Tracker uses, and every number opens the deals behind it.</p>
+  <div class="set-row"><button class="btn secondary sm" data-tpl="health">Pipeline health</button><button class="btn secondary sm" data-tpl="week">My week</button><button class="btn secondary sm" data-tpl="mkt">Marketing</button></div></div>`;
+}
+function drawer(D, c) {
+  const w = D.widgets.find((x) => x.id === UI.sel);
+  if (!w) {
+    const groups = {};
+    Object.entries(TYPES).forEach(([k, t]) => (groups[t.group] = groups[t.group] || []).push([k, t]));
+    return `<aside class="drawer" aria-label="Add a widget"><div class="dh"><div><h2>Add a widget</h2><p class="sub">Click to add it to the end, then drag it into place.</p></div></div>
+      <form class="ask" id="ask"><span aria-hidden="true">${ICON.sparkle}</span><input id="ask-in" placeholder="Describe a chart, e.g. won by owner" aria-label="Describe the widget you want" autocomplete="off"><button type="submit">Add</button></form>
+      <div class="sugg">${["Forecast vs goal", "New leads by source", "Who's ahead of goal", "Stuck deals", "Why we lose"].map((s) => `<button data-ask="${s}">${s}</button>`).join("")}</div>
+      ${UI.note ? `<p class="note ${UI.note.warn ? "warn" : ""}">${esc(UI.note.text)}</p>` : ""}
+      ${Object.entries(groups).map(([g, items]) => `<div class="lib-g"><p>${g}</p>${items.map(([k, t]) => `<button class="lib-i" data-add="${k}"><span class="gl-ic" aria-hidden="true">${GLYPH[k]}</span><span><b>${t.name}</b><span class="d">${t.desc}</span></span></button>`).join("")}</div>`).join("")}</aside>`;
+  }
+  const seg = (key, opts, cur) => `<div class="seg small" role="group">${opts.map(([v, l]) => `<button data-set="${key}" data-val="${v}" aria-pressed="${String(cur) === String(v)}">${l}</button>`).join("")}</div>`;
+  let specific = "";
+  if (w.type === "kpi") {
+    specific = `<div class="field"><label for="set-metric">Number</label><select class="sel" id="set-metric" data-set-sel="metric">${Object.entries(METRICS).map(([k, m]) => `<option value="${k}" ${w.o.metric === k ? "selected" : ""}>${m.label}</option>`).join("")}</select></div>
+      <div class="field"><span class="lbl">Show</span>${seg("show", w.o.metric === "wonQuarter" ? [["goal", "Progress to goal"], ["number", "Number only"]] : [["trend", "With trend line"], ["number", "Number only"]], w.o.show)}</div>
+      ${w.o.metric === "wonQuarter" ? `<div class="field"><label for="set-goal">Quarter goal (€)</label><input class="input num" id="set-goal" type="number" min="0" step="1000" value="${goalFor(c, w)}" data-set-num="goal"></div>` : ""}`;
+  } else if (w.type === "trend") {
+    specific = `<div class="field"><span class="lbl">Measure</span>${seg("measure", [["won", "Won value"], ["new", "New leads"]], w.o.measure)}</div>
+      <div class="field"><span class="lbl">Split by</span>${seg("split", [["source", "Source"], ["owner", "Owner"], ["none", "Nothing"]], w.o.split)}</div>
+      <div class="field"><span class="lbl">Draw as</span>${seg("chart", [["columns", "Stacked columns"], ["lines", "Lines"]], w.o.chart)}</div>`;
+  } else if (w.type === "forecast") {
+    specific = `<div class="field"><label for="set-goal">Quarter goal (€)</label><input class="input num" id="set-goal" type="number" min="0" step="1000" value="${goalFor(c, w)}" data-set-num="goal"></div>
+      <label class="toggle"><input type="checkbox" data-set-chk="band" ${w.o.band !== false ? "checked" : ""}>Show likely range</label>
+      <label class="toggle"><input type="checkbox" data-set-chk="prev" ${w.o.prev ? "checked" : ""}>Compare with last quarter</label>`;
+  }
+  const own = wOwn(w);
+  return `<aside class="drawer" aria-label="Widget settings"><div class="dh"><div><h2>${esc(wTitle(w))}</h2><p class="sub">${TYPES[w.type].name} · ${own ? `uses ${own.toLowerCase()}` : "follows the dashboard filters"}</p></div><button class="icon-btn" data-act="deselect" aria-label="Back to the widget list">${ICON.x}</button></div>
+    <div class="field"><label for="set-title">Title</label><input class="input" id="set-title" value="${esc(w.title || "")}" placeholder="${esc(wTitle({ ...w, title: null }))}"></div>
+    <div class="field"><span class="lbl">Width</span>${seg("span", [[3, "¼"], [4, "⅓"], [6, "½"], [8, "⅔"], [12, "Full"]], w.span)}</div>
+    ${specific}
+    <div class="field"><span class="lbl">Display</span>${seg("table", [["", "Chart"], ["1", "Table"]], w.o.table ? "1" : "")}</div>
+    <hr><div class="set-row"><button class="btn secondary sm" data-act="move" data-dir="-1" data-wid="${w.id}">${ICON.left}Earlier</button><button class="btn secondary sm" data-act="move" data-dir="1" data-wid="${w.id}">Later${ICON.right}</button><span style="flex:1"></span><button class="btn danger sm" data-act="remove" data-wid="${w.id}">${ICON.trash}Remove</button></div></aside>`;
+}
+
+const app = document.getElementById("app");
+function render() {
+  const D = dash(), c = ctxFor(D.f);
+  CHARTS.clear();
+  const grid = D.widgets.length ? D.widgets.map((w) => card(w, c)).join("") : emptyState();
+  app.innerHTML = header() + `<main class="page wrap">${top(D, c)}<div class="ws ${UI.edit ? "editing" : ""}"><section class="grid" id="grid" aria-label="Widgets">${grid}</section>${UI.edit ? drawer(D, c) : ""}</div></main>
+    <footer class="foot wrap">Mockup for the Lead Tracker dashboards feature. Brightwater Studio and every number here are generated examples. Layout changes stay in this browser.</footer>`;
+  drawCharts(); renderDrill(); save();
+  app._ctx = c;
+}
+function drawCharts() { CHARTS.forEach((fn, id) => { if (!fn) return; const el = app.querySelector(`[data-chart="${id}"]`); if (el) fn(el); }); }
+// Redraw charts whenever the grid changes width (window resize, drawer opening, pane resize).
+let rz, lastW = 0;
+const ro = new ResizeObserver(() => { const w = app.clientWidth; if (w === lastW) return; lastW = w; clearTimeout(rz); rz = setTimeout(drawCharts, 80); });
+ro.observe(app);
+
+function renderDrill() {
+  const host = document.getElementById("drill"), d = UI.drill;
+  if (!d) { host.innerHTML = ""; return; }
+  const list = [...d.deals].sort((a, b) => b.amount - a.amount), total = sum(list, (x) => x.amount);
+  const state = (x) => (x.status === "won" ? `<span class="badge won">Won</span>` : x.status === "lost" ? `<span class="badge lost">Lost</span>` : `<span class="badge">${STAGES[x.maxStage].name}</span>`);
+  const when = (x) => (d.kind === "reply" ? `replied in ${hours(x.replyH)}` : x.closedAt && d.kind !== "new" ? `closed ${dfmt(x.closedAt)}` : `created ${dfmt(x.created)}`);
+  host.innerHTML = `<div class="scrim" data-act="close-drill"></div><aside class="sheet" role="dialog" aria-modal="true" aria-label="${esc(d.title)}">
+    <div class="sheet-h"><div><p class="ey">${esc(d.eyebrow)}</p><h2>${esc(d.title)}</h2><p class="sum">${plural(list.length, "deal")} · ${eur.format(total)}</p></div><button class="icon-btn" data-act="close-drill" aria-label="Close">${ICON.x}</button></div>
+    <div class="sheet-b">${list.length ? list.map((x) => `<div class="row"><span class="t">${esc(x.title)}</span><span class="v">${eur.format(x.amount)}</span><span class="s">${esc(x.company)} · ${x.owner ? esc(ownerById[x.owner].name) : "Unassigned"} · ${esc(sourceById[x.source].name)} · ${when(x)}</span><span class="b">${state(x)}</span></div>`).join("") : `<p style="color:var(--ink-3);padding:24px 0">No deals here.</p>`}</div>
+    <div class="sheet-f"><span>In the app, each row opens that deal's thread in the Inbox.</span><button class="btn secondary sm" data-act="close-drill">Close</button></div></aside>`;
+  host.querySelector(".sheet .icon-btn").focus();
+}
+
+// ---------- actions ----------
+function addWidget(type, o, title) {
+  const D = dash();
+  const defaults = { kpi: { metric: "won", show: "trend" }, trend: { measure: "won", split: "source", chart: "columns" }, forecast: { band: true, prev: true } };
+  const w = W(type, TYPES[type].span, { ...(defaults[type] || {}), ...(o || {}) }, title);
+  D.widgets.push(w); UI.sel = w.id; UI.note = null;
+  render();
+  const el = app.querySelector(`[data-wid="${w.id}"]`); if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  return w;
+}
+function ask(q) {
+  const s = q.toLowerCase();
+  const rules = [
+    [/forecast|goal|target|quarter/, () => addWidget("forecast")],
+    [/stuck|aging|ageing|stale|old/, () => addWidget("aging")],
+    [/risk|overdue|quiet|attention/, () => addWidget("risk")],
+    [/lose|lost|why/, () => addWidget("lost")],
+    [/reply|response|speed|fast/, () => addWidget("reply")],
+    [/activit|calls|busy|calendar/, () => addWidget("calendar")],
+    [/funnel|conversion|stage/, () => addWidget("funnel")],
+    [/(owner|person|rep|team).*(week|month|time)|over time.*(owner|person)/, () => addWidget("trend", { measure: /lead|new/.test(s) ? "new" : "won", split: "owner", chart: "columns" })],
+    [/ahead|owner|person|rep|team|who/, () => addWidget("quota")],
+    [/source|channel|marketing|where/, () => addWidget("trend", { measure: /lead|new/.test(s) ? "new" : "won", split: "source", chart: /line/.test(s) ? "lines" : "columns" })],
+    [/win rate/, () => addWidget("kpi", { metric: "winRate", show: "trend" })],
+    [/pipeline|weighted/, () => addWidget("kpi", { metric: "weighted", show: "trend" })],
+    [/new lead|leads/, () => addWidget("kpi", { metric: "newLeads", show: "trend" })],
+    [/won|revenue|sales/, () => addWidget("trend", { measure: "won", split: "none", chart: "columns" })],
+  ];
+  for (const [re, fn] of rules) if (re.test(s)) { fn(); return; }
+  UI.note = { warn: true, text: `Couldn't match "${q}" to a widget yet. Try one of the suggestions, or pick from the list.` }; render();
+}
+
+app.addEventListener("click", (ev) => {
+  const t = ev.target.closest("button, [data-funnel], [data-lost], [data-quota], [data-age], figure.w");
+  if (!t) return;
+  const D = dash(), c = ctxFor(D.f), ds = t.dataset;
+  if (ds.tab) { S.active = ds.tab; UI.sel = null; render(); return; }
+  if (ds.tpl) { const p = presets().find((x) => x.id === ds.tpl); D.widgets = p.widgets; D.f = p.f; render(); return; }
+  if (ds.period) { D.f.period = ds.period; render(); return; }
+  if (ds.add) { addWidget(ds.add); return; }
+  if (ds.ask) { ask(ds.ask); return; }
+  if (ds.set) { const w = D.widgets.find((x) => x.id === UI.sel); if (!w) return; if (ds.set === "span") w.span = +ds.val; else if (ds.set === "table") w.o.table = !!ds.val; else w.o[ds.set] = ds.val; render(); return; }
+  if (ds.drill) { const w = D.widgets.find((x) => x.id === ds.drill); if (UI.edit) return; const m = METRICS[w.o.metric]; if (w.o.metric === "wonQuarter") drillOpen("This quarter", "Won so far", wonIn(c, QS, NOW), "won"); else drillOpen(PERIODS[D.f.period], m.label, m.deals(c, c.start, c.end), w.o.metric === "newLeads" ? "new" : w.o.metric === "replyTime" ? "reply" : "won"); return; }
+  if (ds.funnel && !UI.edit) { const k = +ds.funnel.split(":")[1]; const s = funnelData(c)[k]; drillOpen("Conversion funnel", k ? `Reached ${s.label}` : "Created in this period", s.deals, "new"); return; }
+  if (ds.lost != null && !UI.edit) { const x = lostData(c)[+ds.lost]; drillOpen("Lost reasons", x.r, x.deals, "won"); return; }
+  if (ds.quota && !UI.edit) { const r = quotaData(c).find((x) => x.o.id === ds.quota); drillOpen("Won this quarter", r.o.name, r.deals, "won"); return; }
+  if (ds.age && !UI.edit) { const [si, ai] = ds.age.split(":").map(Number); drillOpen("Deal aging", `${STAGES[si].name} for ${AGE[ai].label.replace(" d", " days")}`, agingCells(c)[si][ai], "new"); return; }
+  if (ds.riskAll) { drillOpen("Deals at risk", "Overdue, quiet or unowned", riskData(c).map((x) => x.d), "new"); return; }
+  switch (ds.act) {
+    case "edit": UI.edit = !UI.edit; UI.sel = null; UI.note = null; render(); return;
+    case "new-dash": { const id = "d" + uid++; S.dashes.push({ id, name: "Untitled dashboard", shared: "Only you", sched: null, f: { period: "90d", owner: "all", source: "all", compare: true }, widgets: [] }); S.active = id; UI.edit = true; UI.sel = null; render(); setTimeout(() => { const i = document.getElementById("dash-name"); if (i) { i.focus(); i.select(); } }); return; }
+    case "reset": { const p = presets().find((x) => x.id === D.id); if (p) { Object.assign(D, p); } else { D.widgets = []; } UI.sel = null; render(); return; }
+    case "share": UI.drill = null; t.textContent = "Link copied"; setTimeout(render, 1400); return;
+    case "table": { const w = D.widgets.find((x) => x.id === ds.wid); w.o.table = !w.o.table; render(); return; }
+    case "remove": D.widgets = D.widgets.filter((x) => x.id !== ds.wid); if (UI.sel === ds.wid) UI.sel = null; render(); return;
+    case "move": { const i = D.widgets.findIndex((x) => x.id === ds.wid), j = i + +ds.dir; if (j < 0 || j >= D.widgets.length) return; const [w] = D.widgets.splice(i, 1); D.widgets.splice(j, 0, w); render(); return; }
+    case "size": { const w = D.widgets.find((x) => x.id === ds.wid), sizes = [3, 4, 6, 8, 12]; w.span = sizes[(sizes.indexOf(w.span) + 1) % sizes.length]; UI.sel = w.id; render(); return; }
+    case "deselect": UI.sel = null; render(); return;
+  }
+  if (t.matches("figure.w") && UI.edit) { UI.sel = t.dataset.wid; UI.note = null; render(); }
+});
+app.addEventListener("keydown", (ev) => { if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches("[data-funnel],[data-lost],[data-quota]")) { ev.preventDefault(); ev.target.click(); } });
+app.addEventListener("change", (ev) => {
+  const t = ev.target, D = dash();
+  if (t.id === "f-owner") { D.f.owner = t.value; render(); }
+  else if (t.id === "f-source") { D.f.source = t.value; render(); }
+  else if (t.id === "f-compare") { D.f.compare = t.checked; render(); }
+  else if (t.id === "dash-name") { D.name = t.value.trim() || "Untitled dashboard"; render(); }
+  else if (t.dataset.setSel) { const w = D.widgets.find((x) => x.id === UI.sel); w.o[t.dataset.setSel] = t.value; if (w.o.metric === "wonQuarter" && w.o.show === "trend") w.o.show = "goal"; if (w.o.metric !== "wonQuarter" && w.o.show === "goal") w.o.show = "trend"; render(); }
+  else if (t.dataset.setNum) { const w = D.widgets.find((x) => x.id === UI.sel); const v = Math.max(0, +t.value || 0); w.o.goal = v || null; D.widgets.filter((x) => x.type === "forecast" || x.o.metric === "wonQuarter").forEach((x) => (x.o.goal = v || null)); render(); }
+  else if (t.dataset.setChk) { const w = D.widgets.find((x) => x.id === UI.sel); w.o[t.dataset.setChk] = t.checked; render(); }
+  else if (t.id === "set-title") { const w = D.widgets.find((x) => x.id === UI.sel); w.title = t.value.trim() || null; render(); }
+});
+app.addEventListener("input", (ev) => {
+  if (ev.target.id !== "set-title") return;
+  const w = dash().widgets.find((x) => x.id === UI.sel); const h = app.querySelector(`[data-wid="${w.id}"] h3, [data-wid="${w.id}"] .k-label`);
+  if (h) h.textContent = ev.target.value || wTitle({ ...w, title: null });
+});
+app.addEventListener("submit", (ev) => { if (ev.target.id === "ask") { ev.preventDefault(); const q = document.getElementById("ask-in").value.trim(); if (q) ask(q); } });
+
+// Drag to reorder (edit mode).
+let dragId = null;
+app.addEventListener("dragstart", (ev) => { const f = ev.target.closest && ev.target.closest("figure.w"); if (!f || !UI.edit) return; dragId = f.dataset.wid; f.classList.add("dragging"); ev.dataTransfer.effectAllowed = "move"; try { ev.dataTransfer.setData("text/plain", dragId); } catch (e) {} });
+app.addEventListener("dragover", (ev) => { const f = ev.target.closest && ev.target.closest("figure.w"); if (!dragId || !f || f.dataset.wid === dragId) return; ev.preventDefault(); app.querySelectorAll(".drop-target").forEach((x) => x.classList.remove("drop-target")); f.classList.add("drop-target"); });
+app.addEventListener("drop", (ev) => {
+  const f = ev.target.closest && ev.target.closest("figure.w"); if (!dragId || !f) return; ev.preventDefault();
+  const D = dash(), from = D.widgets.findIndex((x) => x.id === dragId), to = D.widgets.findIndex((x) => x.id === f.dataset.wid);
+  const [w] = D.widgets.splice(from, 1); D.widgets.splice(to, 0, w); dragId = null; UI.sel = w.id; render();
+});
+app.addEventListener("dragend", () => { dragId = null; app.querySelectorAll(".dragging,.drop-target").forEach((x) => x.classList.remove("dragging", "drop-target")); });
+
+document.getElementById("drill").addEventListener("click", (ev) => { if (ev.target.closest('[data-act="close-drill"]')) { UI.drill = null; renderDrill(); } });
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && UI.drill) { UI.drill = null; renderDrill(); } });
+
+render();
+})();
+</script>

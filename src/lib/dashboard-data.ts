@@ -91,4 +91,32 @@ export const splitFor = cache(
   },
 );
 
-export type WidgetContext = { orgId: string; currency: string; filters: ReportFilters; compare: boolean; canExport: boolean };
+export type ForecastData = {
+  start: string;
+  end: string;
+  days: number;
+  // Index of today in the quarter (the last day for a past quarter).
+  today: number;
+  live: boolean;
+  actual: number[];
+  projection: number[];
+  low: number[];
+  high: number[];
+  previous: number[];
+  won: number;
+  forecast: number;
+  goal: number | null;
+  open_count: number;
+  assumed_count: number;
+  owners: { user_id: string; name: string; won: number; forecast: number; goal: number | null }[];
+};
+
+// This quarter, whatever the dashboard period; owner and source filters still apply.
+export const forecastFor = cache(async (orgId: string, owner?: string, source?: string): Promise<ForecastData> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("report_forecast", { p_org: orgId, p_owner: owner, p_source: source });
+  if (error) throw new Error(error.message);
+  return data as unknown as ForecastData;
+});
+
+export type WidgetContext = { orgId: string; currency: string; filters: ReportFilters; compare: boolean; canExport: boolean; isAdmin: boolean };

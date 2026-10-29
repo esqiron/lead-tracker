@@ -345,6 +345,7 @@ export function StatTile({
   note,
   trend,
   onSelect,
+  goal,
 }: {
   label: string;
   value: string;
@@ -355,6 +356,8 @@ export function StatTile({
   trend?: number[];
   // Makes the number a button (e.g. to list the leads behind it).
   onSelect?: () => void;
+  // Progress to a goal, with a mark where an even pace would be.
+  goal?: { value: number; target: number; pace: number; caption: string };
 }) {
   return (
     <div className="h-full rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -384,6 +387,15 @@ export function StatTile({
         </p>
       ) : note ? (
         <p className="mt-1 text-xs text-zinc-500">{note}</p>
+      ) : null}
+      {goal ? (
+        <div className="mt-3">
+          <div className="relative h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800" role="img" aria-label={goal.caption}>
+            <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.min(100, (goal.value / goal.target) * 100)}%`, background: "var(--viz-1)" }} />
+            <div title="Where an even pace would be" className="absolute -inset-y-1 w-0.5 rounded-[1px] bg-zinc-900 dark:bg-zinc-100" style={{ left: `${Math.min(100, (goal.pace / goal.target) * 100)}%` }} />
+          </div>
+          <p className="mt-1.5 text-xs text-zinc-500">{goal.caption}</p>
+        </div>
       ) : null}
       {trend && trend.length > 1 ? (
         <div className="mt-3">
@@ -675,17 +687,19 @@ export function CalendarHeat({ days, unit = "activities" }: { days: { date: stri
 
 // --- Bullet list (value + forecast against a target) -----------------------------------
 
-export type BulletRow = { key: string; label: string; value: number; forecast?: number; target: number; display: string; detail?: string };
+// `target` is optional: people without a goal get bars but no goal mark.
+export type BulletRow = { key: string; label: string; value: number; forecast?: number; target?: number | null; display: string; detail?: string };
 
 export function BulletList({ rows, onSelect }: { rows: BulletRow[]; onSelect?: (row: BulletRow) => void }) {
-  const max = Math.max(1, ...rows.map((r) => Math.max(r.target, r.value + (r.forecast ?? 0)))) * 1.05;
+  const max = Math.max(1, ...rows.map((r) => Math.max(r.target ?? 0, r.value + (r.forecast ?? 0)))) * 1.05;
   const hasForecast = rows.some((r) => r.forecast);
+  const hasTarget = rows.some((r) => r.target);
   return (
     <div>
       <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400" aria-label="Legend">
         <li className="flex items-center gap-1.5"><span aria-hidden className="size-2.5 rounded-[2px]" style={{ background: "var(--viz-1)" }} />Won</li>
         {hasForecast ? <li className="flex items-center gap-1.5"><span aria-hidden className="size-2.5 rounded-[2px]" style={{ background: "color-mix(in srgb, var(--viz-1) 30%, transparent)" }} />Forecast</li> : null}
-        <li className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-0.5 rounded-[1px] bg-zinc-900 dark:bg-zinc-100" />Goal</li>
+        {hasTarget ? <li className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-0.5 rounded-[1px] bg-zinc-900 dark:bg-zinc-100" />Goal</li> : null}
       </ul>
       <ul className="space-y-1">
         {rows.map((r) => (
@@ -695,10 +709,12 @@ export function BulletList({ rows, onSelect }: { rows: BulletRow[]; onSelect?: (
               onClick={onSelect ? () => onSelect(r) : undefined}
               disabled={!onSelect}
               aria-label={`${r.label}: ${r.display}${r.detail ? `, ${r.detail}` : ""}`}
-              className="grid w-full grid-cols-[minmax(5rem,9rem)_1fr_auto] items-center gap-3 rounded-md px-1 py-1 text-left enabled:hover:bg-zinc-50 dark:enabled:hover:bg-zinc-900"
+              className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 rounded-md px-1 py-1 text-left enabled:hover:bg-zinc-50 dark:enabled:hover:bg-zinc-900"
             >
+              {/* Name and figure on one line, the bar full width beneath, so it reads at any widget width. */}
               <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">{r.label}</span>
-              <span className="relative block h-5 min-w-0">
+              <span className="text-sm whitespace-nowrap tabular-nums text-zinc-900 dark:text-zinc-100">{r.display}</span>
+              <span className="relative col-span-2 block h-5 min-w-0">
                 <span className="absolute top-1 left-0 h-3 rounded-r-[4px]" style={{ width: `${(r.value / max) * 100}%`, background: "var(--viz-1)" }} />
                 {r.forecast ? (
                   <span
@@ -706,9 +722,8 @@ export function BulletList({ rows, onSelect }: { rows: BulletRow[]; onSelect?: (
                     style={{ left: `calc(${(r.value / max) * 100}% + 2px)`, width: `${(r.forecast / max) * 100}%`, background: "color-mix(in srgb, var(--viz-1) 30%, transparent)" }}
                   />
                 ) : null}
-                <span className="absolute inset-y-0 w-0.5 rounded-[1px] bg-zinc-900 dark:bg-zinc-100" style={{ left: `${(r.target / max) * 100}%` }} />
+                {r.target ? <span className="absolute inset-y-0 w-0.5 rounded-[1px] bg-zinc-900 dark:bg-zinc-100" style={{ left: `${(r.target / max) * 100}%` }} /> : null}
               </span>
-              <span className="text-sm whitespace-nowrap tabular-nums text-zinc-900 dark:text-zinc-100">{r.display}</span>
             </button>
           </li>
         ))}

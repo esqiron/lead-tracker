@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { userMessage } from "@/lib/errors";
 import { allowed, TOO_MANY } from "@/lib/rate-limit";
 import { logEvent } from "@/lib/audit";
+import { isQuarterStart } from "@/lib/goals";
 import { AUDIT_RETENTION_OPTIONS, CONTACT_RETENTION_OPTIONS } from "@/lib/privacy";
 
 // --- Organization -------------------------------------------------------------
@@ -220,4 +221,34 @@ export async function changePassword(_: FormState, formData: FormData): Promise<
   if (error) return { error: error.message };
   await supabase.auth.signOut({ scope: "others" });
   return { message: "Password changed. Other devices have been signed out." };
+}
+
+// --- Goals ----------------------------------------------------------------------
+
+// Replaces a quarter's goals: a blank field removes that goal.
+export async function saveGoals(_: FormState, formData: FormData): Promise<FormState> {
+  const { org } = await requireSettingsAdmin();
+  const quarter = field(formData, "quarter");
+  if (!isQuarterStart(quarter)) return { error: "Pick a quarter." };
+
+  const goals: { user_id: string | null; amount: number }[] = [];
+  const fieldErrors: Record<string, string> = {};
+  for (const [name, raw] of formData.entries()) {
+    if (name !== "team" && !name.startsWith("user:")) continue;
+    const text = String(raw).replace(/[\s,]/g, "");
+    if (!text) continue;
+    const amount = Number(text);
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1e12) {
+      fieldErrors[name] = "Enter an amount, or leave it blank for no goal.";
+      continue;
+    }
+    goals.push({ user_id: name === "team" ? null : name.slice(5), amount: Math.round(amount * 100) / 100 });
+  }
+  if (Object.keys(fieldErrors).length) return { fieldErrors };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_goals", { p_org: org.id, p_period_start: quarter, p_goals: goals });
+  if (error) return { error: userMessage(error) };
+  revalidatePath("/settings/goals");
+  return { message: "Goals saved." };
 }

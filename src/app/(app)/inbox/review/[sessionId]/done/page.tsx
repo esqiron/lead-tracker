@@ -6,7 +6,9 @@ import { PageSpinner } from "@/components/page-spinner";
 import { buttonClass, cx } from "@/components/ui";
 import { requireReadyOrg } from "@/lib/auth";
 import { getMembers } from "@/lib/crm";
+import { forecastFor } from "@/lib/dashboard-data";
 import { formatDate, formatDateTime, formatDay, formatMoney } from "@/lib/format";
+import { quarterLabel } from "@/lib/goals";
 import { getSession, WEEKDAYS } from "@/lib/review";
 import { createClient } from "@/lib/supabase/server";
 import { finishReview } from "../../actions";
@@ -46,11 +48,14 @@ async function ReviewDone({ params }: PageProps<"/inbox/review/[sessionId]/done"
   const ids = [...answered.keys()];
   const taskIds = [...answered.values()].map((a) => a.nextTaskId).filter(Boolean) as string[];
   const supabase = await createClient();
-  const [{ data: leads }, { data: tasks }, members] = await Promise.all([
+  const [{ data: leads }, { data: tasks }, members, quarter] = await Promise.all([
     ids.length ? supabase.from("leads").select("id, title, value, currency").in("id", ids) : Promise.resolve({ data: [] }),
     taskIds.length ? supabase.from("activities").select("id, body, due_at, assigned_to, lead_id").in("id", taskIds) : Promise.resolve({ data: [] }),
     getMembers(org.id),
+    // The quarter forecast the dashboards show, for the same deals the review covered.
+    forecastFor(org.id, session.scope === "mine" ? session.user_id : undefined),
   ]);
+  const quarterGap = quarter.goal ? quarter.forecast - quarter.goal : null;
   const lead = new Map((leads ?? []).map((l) => [l.id, l]));
   const memberName = new Map(members.map((m) => [m.id, m.name]));
   const all = [...answered.values()];
@@ -148,6 +153,20 @@ async function ReviewDone({ params }: PageProps<"/inbox/review/[sessionId]/done"
           <p className={cx("text-sm", delta < 0 ? "text-rose-700 dark:text-rose-300" : delta > 0 ? "text-accent-ink" : "text-zinc-500")}>
             {delta === 0 ? "No change." : `${delta > 0 ? "+" : "−"}${formatMoney(Math.abs(delta), org.currency)}`}
           </p>
+          <div className="border-t border-zinc-100 pt-3 dark:border-zinc-800">
+            <p className="text-xs text-zinc-500">{quarterLabel(quarter.start)}, with the dates you just set</p>
+            <p className="mt-1 text-sm">
+              <b className="font-semibold tabular-nums">{formatMoney(quarter.forecast, org.currency)}</b> expected by the end of the quarter, {formatMoney(quarter.won, org.currency)} won so far.
+            </p>
+            {quarterGap !== null ? (
+              <p className={cx("mt-1 text-sm", quarterGap < 0 ? "text-amber-800 dark:text-amber-300" : "text-accent-ink")}>
+                {quarterGap < 0 ? `${formatMoney(-quarterGap, org.currency)} short of the ${formatMoney(quarter.goal!, org.currency)} goal` : `${formatMoney(quarterGap, org.currency)} over the ${formatMoney(quarter.goal!, org.currency)} goal`}
+              </p>
+            ) : null}
+            <Link href="/reports" className="mt-2 inline-block text-xs font-medium text-accent-ink underline-offset-2 hover:underline">
+              See the forecast
+            </Link>
+          </div>
         </section>
       </div>
 

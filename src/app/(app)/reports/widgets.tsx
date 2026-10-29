@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
-import { BarList, ChartCard, DataTable, LineChart, type Series, type SeriesColor } from "@/components/charts";
-import { kpisFor, reportFor, splitFor, type WidgetContext } from "@/lib/dashboard-data";
+import Link from "next/link";
+import { BarList, ChartCard, DataTable, ForecastChart, LineChart, type Series, type SeriesColor } from "@/components/charts";
+import { forecastFor, kpisFor, reportFor, splitFor, type ForecastData, type WidgetContext } from "@/lib/dashboard-data";
 import { widgetTitle, type DrillQuery, type DrillRequest, type KpiMetric, type Widget, type WidgetOf } from "@/lib/dashboards";
 import { formatMoney } from "@/lib/format";
+import { quarterLabel } from "@/lib/goals";
 import { queryString } from "@/lib/list-filters";
 import { bucketLabel, periodLabel, winRate } from "@/lib/reports";
-import { DrillBarList, DrillButton, DrillColumnChart, DrillStatTile } from "./drill";
+import { DrillBarList, DrillBulletList, DrillButton, DrillColumnChart, DrillStatTile } from "./drill";
 
 // One server component per widget type. Each reads only what it shows; the
 // shared queries are deduplicated per request (see lib/dashboard-data.ts).
@@ -76,7 +78,34 @@ function bucketRange(buckets: string[], i: number, f: { from: string; to: string
 
 // --- Numbers -------------------------------------------------------------------------
 
+// The quarter so far, as a drill-down range.
+const quarterSoFar = (f: ForecastData) => ({ from: f.start, to: addDays(f.start, f.today) });
+
+async function WonQuarterTile({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext }) {
+  const f = await forecastFor(ctx.orgId, ctx.filters.owner, ctx.filters.source);
+  const money = (n: number) => formatMoney(n, ctx.currency);
+  const label = widgetTitle(w);
+  const request = drill(ctx, label, `Won in ${quarterLabel(f.start)}`, [{ kind: "won" }], quarterSoFar(f));
+  const left = f.days - f.today - 1;
+  if (!f.goal) {
+    return <DrillStatTile request={request} label={label} value={money(f.won)} note={`${quarterLabel(f.start)} · no goal set${left > 0 ? ` · ${left} days left` : ""}`} />;
+  }
+  // Where an even pace through the quarter would put you by the end of today.
+  const pace = (f.goal * (f.today + 1)) / f.days;
+  const ahead = f.won >= pace;
+  return (
+    <DrillStatTile
+      request={request}
+      label={label}
+      value={money(f.won)}
+      delta={{ text: ahead ? "Ahead of pace" : `${money(pace - f.won)} behind pace`, good: ahead }}
+      goal={{ value: f.won, target: f.goal, pace, caption: `${pct(f.won / f.goal)} of ${money(f.goal)} · ${left > 0 ? `${left} days left` : "quarter over"}` }}
+    />
+  );
+}
+
 async function KpiWidget({ w, ctx }: { w: WidgetOf<"kpi">; ctx: WidgetContext }) {
+  if (w.options.metric === "won_quarter") return <WonQuarterTile w={w} ctx={ctx} />;
   const [report, kpis] = await Promise.all([reportFor(...args(ctx)), kpisFor(...args(ctx))]);
   const money = (n: number) => formatMoney(n, ctx.currency);
   const k = report.kpis, p = report.previous, cur = kpis.current, prev = kpis.previous, series = kpis.series;
@@ -460,6 +489,105 @@ async function TeamWidget({ w, ctx }: { w: WidgetOf<"team">; ctx: WidgetContext 
   );
 }
 
+// --- Goals ----------------------------------------------------------------------------
+
+function goalLink(ctx: WidgetContext, f: ForecastData) {
+  if (!ctx.isAdmin) return "No goal set for this quarter.";
+  return (
+    <Link href={`/settings/goals?quarter=${f.start}`} className="font-medium text-accent-ink underline-offset-2 hover:underline">
+      Set a goal for {quarterLabel(f.start)}
+    </Link>
+  );
+}
+
+async function ForecastWidget({ w, ctx }: { w: WidgetOf<"forecast">; ctx: WidgetContext }) {
+  const f = await forecastFor(ctx.orgId, ctx.filters.owner, ctx.filters.source);
+  const money = (n: number) => formatMoney(n, ctx.currency);
+  const gap = f.goal ? f.forecast - f.goal : null;
+  const weeks = Array.from({ length: Math.ceil(f.days / 7) }, (_, k) => Math.min(k * 7, f.days - 1));
+  const at = (i: number) => (i <= f.today ? f.actual[i] : f.projection[i - f.today]);
+  return (
+    <ChartCard
+      title={w.title ?? `${quarterLabel(f.start)} forecast`}
+      description={`${periodLabel({ ...ctx.filters, from: f.start, to: f.end })} · open deals weighted by stage win chance, on their expected close date`}
+      table={
+        <DataTable
+          head={["Week of", "Won so far", "Forecast", "Previous quarter"]}
+          rows={weeks.map((i) => [addDays(f.start, i), i <= f.today ? money(f.actual[i]!) : "—", i >= f.today ? money(at(i)!) : "—", money(f.previous[i] ?? f.previous.at(-1) ?? 0)])}
+        />
+      }
+    >
+      <p className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500">
+        <span>
+          Won <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{money(f.won)}</b>
+        </span>
+        <span>
+          Forecast <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{money(f.forecast)}</b>
+        </span>
+        {gap === null ? (
+          <span>{goalLink(ctx, f)}</span>
+        ) : (
+          <span className={gap >= 0 ? "rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent-ink" : "rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300"}>
+            {gap >= 0 ? `${money(gap)} over goal` : `${money(-gap)} short of goal`}
+          </span>
+        )}
+        {f.live ? (
+          <span>
+            {f.open_count} open deal{f.open_count === 1 ? "" : "s"} expected this quarter
+            {f.assumed_count ? ` (${f.assumed_count} without a close date, counted as closing in 10 days)` : ""}
+          </span>
+        ) : null}
+      </p>
+      <ForecastChart
+        start={f.start}
+        actual={f.actual}
+        projection={f.projection}
+        low={w.options.range ? f.low : undefined}
+        high={w.options.range ? f.high : undefined}
+        previous={w.options.previous ? f.previous : undefined}
+        goal={f.goal ?? undefined}
+        valueFormat={{ kind: "money", currency: ctx.currency }}
+      />
+    </ChartCard>
+  );
+}
+
+async function QuotaWidget({ w, ctx }: { w: WidgetOf<"quota">; ctx: WidgetContext }) {
+  const f = await forecastFor(ctx.orgId, ctx.filters.owner, ctx.filters.source);
+  const money = (n: number) => formatMoney(n, ctx.currency);
+  const range = quarterSoFar(f);
+  return (
+    <ChartCard
+      title={widgetTitle(w)}
+      description={`${quarterLabel(f.start)}: won so far and weighted forecast, against each person's goal`}
+      table={
+        <DataTable
+          head={["Person", "Won", "Forecast", "Goal", "Won of goal"]}
+          rows={f.owners.map((o) => [o.name, money(o.won), money(o.forecast), o.goal ? money(o.goal) : "—", o.goal ? pct(o.won / o.goal) : "—"])}
+        />
+      }
+    >
+      {f.owners.length ? (
+        <DrillBulletList
+          requests={Object.fromEntries(f.owners.map((o) => [o.user_id, drill(ctx, widgetTitle(w), `Won by ${o.name}`, [{ kind: "won", params: { split: "owner", key: o.user_id } }], range)]))}
+          rows={f.owners.map((o) => ({
+            key: o.user_id,
+            label: o.name,
+            value: Number(o.won),
+            forecast: Number(o.forecast),
+            target: o.goal === null ? null : Number(o.goal),
+            display: o.goal ? `${money(o.won)} of ${money(o.goal)}` : money(o.won),
+            detail: `${money(o.forecast)} more expected`,
+          }))}
+        />
+      ) : (
+        <p className="py-6 text-center text-sm text-zinc-500">Nobody owns deals yet.</p>
+      )}
+      {f.owners.every((o) => !o.goal) ? <p className="mt-3 text-xs text-zinc-500">{goalLink(ctx, f)}</p> : null}
+    </ChartCard>
+  );
+}
+
 // --- Dispatch -------------------------------------------------------------------------
 
 function renderWidget(w: Widget, ctx: WidgetContext): Promise<ReactNode> | ReactNode {
@@ -482,6 +610,10 @@ function renderWidget(w: Widget, ctx: WidgetContext): Promise<ReactNode> | React
       return <SourcesWidget w={w} ctx={ctx} />;
     case "team":
       return <TeamWidget w={w} ctx={ctx} />;
+    case "forecast":
+      return <ForecastWidget w={w} ctx={ctx} />;
+    case "quota":
+      return <QuotaWidget w={w} ctx={ctx} />;
   }
 }
 

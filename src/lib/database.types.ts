@@ -559,6 +559,61 @@ export type Database = {
           },
         ]
       }
+      goals: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          org_id: string
+          period_start: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          org_id: string
+          period_start: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          org_id?: string
+          period_start?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instance_settings: {
         Row: {
           allow_multiple_orgs: boolean
@@ -1351,6 +1406,7 @@ export type Database = {
         Args: { p_org: string; p_session: string }
         Returns: undefined
       }
+      forecast_settings: { Args: never; Returns: Record<string, unknown> }
       get_invitation: {
         Args: { p_token: string }
         Returns: {
@@ -1442,6 +1498,15 @@ export type Database = {
           p_owner?: string
           p_source?: string
           p_to: string
+        }
+        Returns: Json
+      }
+      report_forecast: {
+        Args: {
+          p_org: string
+          p_owner?: string
+          p_quarter_start?: string
+          p_source?: string
         }
         Returns: Json
       }
@@ -1581,6 +1646,10 @@ export type Database = {
       }
       save_pipeline_stages: {
         Args: { p_org: string; p_stages: Json }
+        Returns: undefined
+      }
+      set_goals: {
+        Args: { p_goals: Json; p_org: string; p_period_start: string }
         Returns: undefined
       }
       shares_org_with: { Args: { p_user: string }; Returns: boolean }

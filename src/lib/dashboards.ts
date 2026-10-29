@@ -19,6 +19,7 @@ export const KPI_METRICS = {
   velocity: "Sales velocity",
   activities: "Activities logged",
   median_reply: "Median first reply",
+  won_quarter: "Won this quarter",
 } as const;
 export type KpiMetric = keyof typeof KPI_METRICS;
 
@@ -51,6 +52,12 @@ const widgetSchema = z.discriminatedUnion("type", [
   z.object({ ...base, type: z.literal("lost_reasons"), options: noOptions }),
   z.object({ ...base, type: z.literal("sources"), options: noOptions }),
   z.object({ ...base, type: z.literal("team"), options: noOptions }),
+  z.object({
+    ...base,
+    type: z.literal("forecast"),
+    options: z.object({ range: z.boolean().default(true), previous: z.boolean().default(true) }).default({ range: true, previous: true }),
+  }),
+  z.object({ ...base, type: z.literal("quota"), options: noOptions }),
 ]);
 export type Widget = z.infer<typeof widgetSchema>;
 export type WidgetType = Widget["type"];
@@ -113,6 +120,8 @@ export const TEMPLATES = {
       kpi("weighted", "weighted_value"),
       kpi("time-to-close", "time_to_close", false),
       kpi("velocity", "velocity", false),
+      { id: "forecast", type: "forecast", span: 8, options: { range: true, previous: true } },
+      { id: "quota", type: "quota", span: 4, options: {} },
       { id: "won-by-source", type: "trend", span: 6, title: "Won value", options: { measure: "won_value", split: "source", chart: "columns" } },
       { id: "won-lost", type: "won_lost", span: 6, options: {} },
       { id: "new-leads-trend", type: "trend", span: 6, options: { measure: "new_leads", split: "none", chart: "columns" } },
@@ -145,6 +154,8 @@ export const WIDGET_TYPES: Record<WidgetType, { name: string; group: "Numbers" |
   lost_reasons: { name: "Lost reasons", group: "Breakdowns", description: "Why deals were lost, and what they were worth", span: 6, options: {} },
   sources: { name: "Sources", group: "Breakdowns", description: "Where new leads came from and how they did", span: 6, options: {} },
   team: { name: "Team", group: "Breakdowns", description: "Won value, win rate and activity per person", span: 12, options: {} },
+  forecast: { name: "Quarter forecast", group: "Over time", description: "Won so far, what the pipeline should add by the quarter's end, and the goal", span: 8, options: { range: true, previous: true } },
+  quota: { name: "Team vs goal", group: "Breakdowns", description: "Each person's won value and forecast against their goal this quarter", span: 4, options: {} },
 };
 
 export const TREND_MEASURES = { won_value: "Won value", won_count: "Won", new_leads: "New leads" } as const;

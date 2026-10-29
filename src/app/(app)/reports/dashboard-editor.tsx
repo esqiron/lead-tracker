@@ -457,7 +457,7 @@ function ToolButton({ label, onClick, disabled, children }: { label: string; onC
 // --- Library ---------------------------------------------------------------------------
 
 const GROUPS = ["Numbers", "Over time", "Breakdowns"] as const;
-const SUGGESTIONS = ["Won by source", "New leads by owner", "Win rate", "Why we lose", "Who's winning"];
+const SUGGESTIONS = ["Forecast vs goal", "Who's ahead of goal", "Won by source", "Win rate", "Why we lose"];
 
 // Plain keyword matching for "describe a chart": nothing typed here leaves the browser.
 function match(text: string): { type: WidgetType; options?: Partial<Widget["options"]> } | null {
@@ -465,6 +465,9 @@ function match(text: string): { type: WidgetType; options?: Partial<Widget["opti
   const measure = /new|lead|created/.test(s) && !/won|win/.test(s) ? "new_leads" : /how many|count|deals won/.test(s) ? "won_count" : "won_value";
   const split = /source|channel|where|marketing/.test(s) ? "source" : /owner|person|people|rep|who/.test(s) && /time|week|month|by/.test(s) ? "owner" : null;
   if (split) return { type: "trend", options: { measure, split, chart: /line/.test(s) ? "lines" : "columns" } };
+  if (/quota|ahead|behind|target|vs goal/.test(s)) return { type: "quota" };
+  if (/this quarter|so far/.test(s)) return { type: "kpi", options: { metric: "won_quarter", sparkline: false } };
+  if (/forecast|goal|on track|projection/.test(s)) return { type: "forecast" };
   if (/funnel|conversion|how far/.test(s)) return { type: "funnel" };
   if (/lost|lose|why/.test(s)) return { type: "lost_reasons" };
   if (/stage.*(day|long|time)|stuck|slow|velocity|days/.test(s)) return { type: "velocity" };
@@ -474,7 +477,7 @@ function match(text: string): { type: WidgetType; options?: Partial<Widget["opti
   const metrics: [RegExp, KpiMetric][] = [
     [/win rate/, "win_rate"],
     [/average|avg|deal size/, "avg_deal"],
-    [/weighted|forecast/, "weighted_value"],
+    [/weighted/, "weighted_value"],
     [/open pipeline|pipeline/, "open_value"],
     [/time to close|close time/, "time_to_close"],
     [/velocity/, "velocity"],
@@ -624,7 +627,16 @@ function WidgetSettings({
               ))}
             </Select>
           </label>
-          <Segmented label="Trend line" value={w.options.sparkline ? "on" : "off"} options={[["on", "Show"], ["off", "Hide"]]} onChange={(v) => onChange({ options: { ...w.options, sparkline: v === "on" } }, true)} />
+          {w.options.metric === "won_quarter" ? null : (
+            <Segmented label="Trend line" value={w.options.sparkline ? "on" : "off"} options={[["on", "Show"], ["off", "Hide"]]} onChange={(v) => onChange({ options: { ...w.options, sparkline: v === "on" } }, true)} />
+          )}
+        </>
+      ) : null}
+
+      {w.type === "forecast" ? (
+        <>
+          <Segmented label="Likely range" value={w.options.range ? "on" : "off"} options={[["on", "Show"], ["off", "Hide"]]} onChange={(v) => onChange({ options: { ...w.options, range: v === "on" } }, true)} />
+          <Segmented label="Previous quarter" value={w.options.previous ? "on" : "off"} options={[["on", "Show"], ["off", "Hide"]]} onChange={(v) => onChange({ options: { ...w.options, previous: v === "on" } }, true)} />
         </>
       ) : null}
 

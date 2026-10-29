@@ -41,7 +41,7 @@ async function DashboardContent({ params, searchParams }: PageProps<"/reports/[d
   );
   const compareParam = param(sp.compare);
   const compare = compareParam === undefined ? (saved.compare ?? true) : compareParam === "1";
-  const widgetCtx: WidgetContext = { orgId: org.id, currency: org.currency, filters, compare, canExport: isAdminRole(ctx.role) };
+  const widgetCtx: WidgetContext = { orgId: org.id, currency: org.currency, filters, compare, canExport: isAdminRole(ctx.role), isAdmin: isAdminRole(ctx.role) };
   const shared = dashboard.visibility === "org";
   // Creators edit their own; admins also edit shared ones (same rule as RLS).
   const canEdit = dashboard.saved && (dashboard.createdBy === ctx.user.id || (shared && isAdminRole(ctx.role)));

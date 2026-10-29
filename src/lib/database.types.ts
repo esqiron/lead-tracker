@@ -42,10 +42,12 @@ export type Database = {
           contact_id: string | null
           created_at: string
           created_by: string | null
+          direction: string | null
           due_at: string | null
           id: string
           lead_id: string | null
           org_id: string
+          outcome: string | null
           source: string | null
           type: Database["public"]["Enums"]["activity_type"]
           updated_at: string
@@ -57,10 +59,12 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          direction?: string | null
           due_at?: string | null
           id?: string
           lead_id?: string | null
           org_id: string
+          outcome?: string | null
           source?: string | null
           type: Database["public"]["Enums"]["activity_type"]
           updated_at?: string
@@ -72,10 +76,12 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          direction?: string | null
           due_at?: string | null
           id?: string
           lead_id?: string | null
           org_id?: string
+          outcome?: string | null
           source?: string | null
           type?: Database["public"]["Enums"]["activity_type"]
           updated_at?: string
@@ -1158,6 +1164,10 @@ export type Database = {
       is_org_admin: { Args: { p_org: string }; Returns: boolean }
       is_org_member: { Args: { p_org: string }; Returns: boolean }
       load_sample_data: { Args: { p_org: string }; Returns: undefined }
+      log_activity: {
+        Args: { p_org: string; p_payload: Json }
+        Returns: string
+      }
       next_round_robin_owner: { Args: { p_form: string }; Returns: string }
       purge_trash: { Args: { p_days?: number }; Returns: Json }
       rate_limit_ok: {
@@ -1217,6 +1227,10 @@ export type Database = {
         Returns: undefined
       }
       shares_org_with: { Args: { p_user: string }; Returns: boolean }
+      start_conversation: {
+        Args: { p_org: string; p_payload: Json }
+        Returns: Json
+      }
       transfer_ownership: {
         Args: { p_new_owner: string; p_org: string }
         Returns: undefined

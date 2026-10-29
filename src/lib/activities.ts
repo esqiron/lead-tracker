@@ -17,6 +17,9 @@ export type TimelineItem =
       author: string;
       // Set for notes that came in through a form or the API (unverified input).
       source: string | null;
+      // Emails and calls: which way it went; calls: how it ended.
+      direction: "inbound" | "outbound" | null;
+      outcome: string | null;
       assignee: string;
       lead: { id: string; title: string } | null;
     }
@@ -30,7 +33,7 @@ export type TimelineItem =
       actor: string;
     };
 
-const ACTIVITY_SELECT = `id, type, body, due_at, completed_at, created_at, created_by, assigned_to, source,
+const ACTIVITY_SELECT = `id, type, body, due_at, completed_at, created_at, created_by, assigned_to, source, direction, outcome,
   author:profiles!activities_created_by_fkey(full_name, email),
   assignee:profiles!activities_assigned_to_fkey(full_name, email),
   lead:leads!activities_org_id_lead_id_fkey(id, title)`;
@@ -73,6 +76,8 @@ export async function getTimeline(orgId: string, opts: { leadIds: string[]; cont
       assignedTo: a.assigned_to,
       author: name(a.author),
       source: a.source,
+      direction: a.direction === "inbound" || a.direction === "outbound" ? (a.direction as "inbound" | "outbound") : null,
+      outcome: a.outcome,
       assignee: name(a.assignee),
       lead: a.lead,
     })),

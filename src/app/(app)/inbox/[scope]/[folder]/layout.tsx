@@ -4,11 +4,14 @@ import { notFound } from "next/navigation";
 import { clearSampleData } from "@/app/(app)/dashboard/actions";
 import { PageSpinner } from "@/components/page-spinner";
 import { cx } from "@/components/ui";
-import { isAdminRole, requireReadyOrg } from "@/lib/auth";
-import { getMembers, getStages } from "@/lib/crm";
+import { canEditRole, isAdminRole, requireReadyOrg } from "@/lib/auth";
+import { getMembers, getSources, getStages } from "@/lib/crm";
+import { env } from "@/lib/env";
 import { formatDate, formatMoney, initials, shortWhen } from "@/lib/format";
 import { FOLDERS, folderByKey, getInboxSummary, getThreads, hasSampleData, inboxPath, isScope, REASONS, SCOPES, type FolderKey } from "@/lib/inbox";
+import { createClient } from "@/lib/supabase/server";
 import { InboxPanes, ThreadLink } from "../../inbox-panes";
+import { NewMenu, StartConversationRow } from "../../new-menu";
 
 type Params = LayoutProps<"/inbox/[scope]/[folder]">["params"];
 
@@ -39,16 +42,40 @@ export default function InboxLayout({ children, params }: LayoutProps<"/inbox/[s
   );
 }
 
+// The hosted lead form to share from the New menu, if there is one.
+async function getFormUrl(orgId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("capture_forms").select("public_id").eq("org_id", orgId).eq("is_active", true).order("created_at").limit(1).maybeSingle();
+  return data ? `${env.siteUrl}/f/${data.public_id}` : null;
+}
+
 async function Sidebar({ params }: { params: Params }) {
   const { org, role, user } = await requireReadyOrg();
   const { scope, folder } = await readParams(params);
-  const [summary, sample] = await Promise.all([
+  const canEdit = canEditRole(role);
+  const [summary, sample, stages, sources, members, formUrl] = await Promise.all([
     getInboxSummary(org.id, scope, user.id),
     isAdminRole(role) ? hasSampleData(org.id) : Promise.resolve(false),
+    canEdit ? getStages(org.id) : Promise.resolve([]),
+    canEdit ? getSources(org.id) : Promise.resolve([]),
+    canEdit ? getMembers(org.id) : Promise.resolve([]),
+    canEdit ? getFormUrl(org.id) : Promise.resolve(null),
   ]);
 
   return (
     <nav aria-label="Inbox" className="flex h-full flex-col gap-3 md:gap-5">
+      {canEdit ? (
+        <NewMenu
+          formUrl={formUrl}
+          options={{
+            members,
+            stages: stages.filter((s) => !s.is_won && !s.is_lost).map((s) => ({ id: s.id, name: s.name })),
+            sources,
+            currentUserId: user.id,
+            currency: org.currency,
+          }}
+        />
+      ) : null}
       <div className="inline-flex self-start rounded-full bg-white/70 p-1 ring-1 ring-hairline dark:bg-zinc-900/70" role="group" aria-label="Whose threads">
         {SCOPES.map((s) => (
           <Link
@@ -143,7 +170,7 @@ const EMPTY: Record<FolderKey, string> = {
 };
 
 async function ThreadList({ params }: { params: Params }) {
-  const { org, user } = await requireReadyOrg();
+  const { org, user, role } = await requireReadyOrg();
   const { scope, folder } = await readParams(params);
   const [threads, stages, members] = await Promise.all([getThreads(org.id, folder, scope, user.id), getStages(org.id), getMembers(org.id)]);
   const stageName = new Map(stages.map((s) => [s.id, s.name]));
@@ -155,6 +182,7 @@ async function ThreadList({ params }: { params: Params }) {
         <h1 className="font-display text-xl font-semibold tracking-tight">{folderByKey(folder)!.label}</h1>
         <span className="text-xs text-zinc-500">{threads.length}</span>
       </header>
+      {canEditRole(role) ? <StartConversationRow /> : null}
       {threads.length ? (
         <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1.5 pb-2">
           {threads.map((t) => {

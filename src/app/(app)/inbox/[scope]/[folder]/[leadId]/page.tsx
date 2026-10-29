@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { toggleTask } from "@/app/(app)/activities/actions";
 import { assignLead } from "@/app/(app)/leads/actions";
 import { StageControl } from "@/app/(app)/leads/[id]/stage-control";
-import { ActivityComposer } from "@/components/activity-composer";
 import { PageSpinner } from "@/components/page-spinner";
 import { buttonClass, cx, Select } from "@/components/ui";
 import { getTimeline, type TimelineItem } from "@/lib/activities";
@@ -13,13 +12,14 @@ import { canEditRole, requireReadyOrg } from "@/lib/auth";
 import { getMembers, getStages } from "@/lib/crm";
 import { formatDate, formatDateTime, formatDay, formatMoney, initials } from "@/lib/format";
 import { folderByKey, getThread, inboxPath, isScope, type FolderKey } from "@/lib/inbox";
+import { StartedToast, ThreadComposer } from "../../../thread-composer";
 
 export const metadata: Metadata = { title: "Conversation" };
 
 const TYPE_LABELS = { note: "Note", call: "Call", email: "Email", meeting: "Meeting", task: "Task" } as const;
 const TYPE_ICONS = { note: "✎", call: "☎", email: "✉", meeting: "◷", task: "✓" } as const;
 
-async function ThreadPage({ params }: PageProps<"/inbox/[scope]/[folder]/[leadId]">) {
+async function ThreadPage({ params, searchParams }: PageProps<"/inbox/[scope]/[folder]/[leadId]">) {
   const ctx = await requireReadyOrg();
   const { org, user } = ctx;
   const { scope, folder, leadId } = await params;
@@ -34,9 +34,17 @@ async function ThreadPage({ params }: PageProps<"/inbox/[scope]/[folder]/[leadId
   const stageName = new Map(stages.map((s) => [s.id, s.name]));
   const memberName = new Map(members.map((m) => [m.id, m.name]));
   const openTasks = timeline.filter((i) => i.kind === "activity" && i.type === "task" && !i.completedAt && i.id !== thread.nextStep?.id);
-  // Oldest first, like a conversation. Open tasks are plans, shown above instead.
-  const conversation = timeline.filter((i) => !(i.kind === "activity" && i.type === "task" && !i.completedAt)).reverse();
+  // Oldest first, like a conversation. Open tasks are plans, shown above instead;
+  // finished ones sit where they were done.
+  const when = (i: TimelineItem) => (i.kind === "activity" && i.type === "task" && i.completedAt ? i.completedAt : i.at);
+  const conversation = timeline
+    .filter((i) => !(i.kind === "activity" && i.type === "task" && !i.completedAt))
+    .sort((a, b) => when(a).localeCompare(when(b)));
   const backHref = inboxPath(scope, folder as FolderKey);
+  const sp = await searchParams;
+  const justStarted = sp.started === leadId;
+  const startedPerson = typeof sp.person === "string" && /^[0-9a-f-]{36}$/.test(sp.person) ? sp.person : undefined;
+  const startedCompany = typeof sp.company === "string" && /^[0-9a-f-]{36}$/.test(sp.company) ? sp.company : undefined;
 
   return (
     <article className="flex h-full flex-col">
@@ -73,6 +81,7 @@ async function ThreadPage({ params }: PageProps<"/inbox/[scope]/[folder]/[leadId
       </header>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        {justStarted ? <StartedToast leadId={leadId} personId={startedPerson} companyId={startedCompany} backHref={backHref} /> : null}
         {!thread.ownerId && thread.status === "open" ? (
           <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200/70 dark:bg-amber-950/40 dark:ring-amber-900">
             <div className="min-w-0 flex-1">
@@ -150,8 +159,8 @@ async function ThreadPage({ params }: PageProps<"/inbox/[scope]/[folder]/[leadId
           <ol className="space-y-3" aria-label="Conversation">
             {conversation.map((item, i) => {
               const prev = conversation[i - 1];
-              const day = formatDate(item.at, org);
-              const newDay = !prev || formatDate(prev.at, org) !== day;
+              const day = formatDate(when(item), org);
+              const newDay = !prev || formatDate(when(prev), org) !== day;
               return (
                 <li key={`${item.kind}-${item.id}`}>
                   {newDay ? <p className="my-2 text-center text-xs text-zinc-400">{day}</p> : null}
@@ -167,7 +176,16 @@ async function ThreadPage({ params }: PageProps<"/inbox/[scope]/[folder]/[leadId
 
       {canEdit ? (
         <div className="border-t border-hairline p-3">
-          <ActivityComposer leadId={thread.id} contactId={thread.contact?.id} path={path} members={members} currentUserId={user.id} />
+          <ThreadComposer
+            key={thread.id}
+            leadId={thread.id}
+            stages={stages}
+            stageId={thread.stageId}
+            nextStep={thread.nextStep ? { id: thread.nextStep.id, body: thread.nextStep.body } : null}
+            members={members}
+            currentUserId={user.id}
+            contactFirstName={thread.contact?.name.split(" ")[0] ?? null}
+          />
         </div>
       ) : null}
       <p className="px-5 pb-3 text-xs text-zinc-400">
@@ -204,17 +222,24 @@ function Entry({ item, stageName, org }: { item: TimelineItem; stageName: Map<st
       </SystemLine>
     );
   }
-  if (item.source) {
-    // Came in through a form or the API: the sender's words, unverified.
+  if (item.source || item.direction === "inbound") {
+    // From them: a form or API submission (unverified), or an email or call logged as inbound.
     return (
       <div className="max-w-[85%] rounded-2xl rounded-tl-md bg-zinc-100 px-4 py-3 dark:bg-zinc-800">
         <p className="mb-1 text-xs text-zinc-500">
-          <span
-            className="rounded-full bg-amber-50 px-1.5 py-px text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-            title="Submitted from outside the app; the sender's identity isn't verified."
-          >
-            via {item.source} · unverified
-          </span>{" "}
+          {item.source ? (
+            <span
+              className="rounded-full bg-amber-50 px-1.5 py-px text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              title="Submitted from outside the app; the sender's identity isn't verified."
+            >
+              via {item.source} · unverified
+            </span>
+          ) : (
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              {item.type === "call" ? "They called" : "They emailed"}
+              {item.author ? <span className="font-normal text-zinc-500"> · logged by {item.author}</span> : null}
+            </span>
+          )}{" "}
           · {time}
         </p>
         <p className="text-sm whitespace-pre-wrap">{item.body}</p>
@@ -228,6 +253,7 @@ function Entry({ item, stageName, org }: { item: TimelineItem; stageName: Map<st
           {TYPE_ICONS[item.type]}
         </span>
         <span className="font-medium text-zinc-700 dark:text-zinc-300">{TYPE_LABELS[item.type]}</span>
+        {item.outcome ? <span className="rounded-full bg-zinc-100 px-1.5 py-px text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{item.outcome}</span> : null}
         {item.author ? <span>by {item.author}</span> : null}
         <span className="ml-auto">{time}</span>
       </p>

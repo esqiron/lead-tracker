@@ -40,7 +40,7 @@ export function ParamSelect({
   const value = current(name) || defaultValue;
   const choose = (next: string) => setParam(name, next === defaultValue ? "" : next || "all");
   return (
-    <Select aria-label={label} value={value === "all" ? "" : value} onChange={(e) => choose(e.target.value)} className="h-9 w-auto min-w-36">
+    <Select aria-label={label} autoComplete="off" value={value === "all" ? "" : value} onChange={(e) => choose(e.target.value)} className="h-9 w-auto min-w-36">
       <option value="">{allLabel}</option>
       {options.map((o) => (
         <option key={o.value} value={o.value}>

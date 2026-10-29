@@ -119,4 +119,91 @@ export const forecastFor = cache(async (orgId: string, owner?: string, source?: 
   return data as unknown as ForecastData;
 });
 
-export type WidgetContext = { orgId: string; currency: string; filters: ReportFilters; compare: boolean; canExport: boolean; isAdmin: boolean };
+export type WidgetContext = { orgId: string; currency: string; timezone: string; filters: ReportFilters; compare: boolean; canExport: boolean; isAdmin: boolean };
+
+// --- Pipeline health -----------------------------------------------------------------
+
+// Open deals per stage, by days in that stage: 0–7, 8–14, 15–30, 31–60, 61+.
+export type AgingRow = { stage_id: string; name: string; probability: number; counts: number[]; values: number[] };
+
+export const agingFor = cache(async (orgId: string, owner?: string, source?: string): Promise<AgingRow[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("report_aging", { p_org: orgId, p_owner: owner, p_source: source });
+  if (error) throw new Error(error.message);
+  return data as unknown as AgingRow[];
+});
+
+export const activityDaysFor = cache(async (orgId: string, from: string, to: string, owner?: string): Promise<{ day: string; count: number }[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("report_activity_days", { p_org: orgId, p_from: from, p_to: to, p_owner: owner });
+  if (error) throw new Error(error.message);
+  return data as unknown as { day: string; count: number }[];
+});
+
+// Buckets: < 1 h, 1–4 h, 4–24 h, 1–3 days, 3+ days.
+export type FirstReply = { leads: number; replied: number; waiting: number; median_hours: number | null; within_4h: number; buckets: number[] };
+
+export const firstReplyFor = cache(async (orgId: string, from: string, to: string, owner?: string, source?: string): Promise<FirstReply> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("report_first_reply", { p_org: orgId, p_from: from, p_to: to, p_owner: owner, p_source: source });
+  if (error) throw new Error(error.message);
+  return data as unknown as FirstReply;
+});
+
+export type RiskFlag = "overdue" | "quiet" | "unowned";
+export type RiskDeal = {
+  id: string;
+  title: string;
+  value: number;
+  company: string | null;
+  owner: string | null;
+  stage: string | null;
+  closeDate: string | null;
+  daysQuiet: number | null;
+  folder: string | null;
+  flags: RiskFlag[];
+};
+
+// Open deals that need a look, using the Inbox's own rules (lead_threads):
+// close date passed, gone quiet (the "Going cold" folder), or nobody owns it.
+export const riskFor = cache(async (orgId: string, owner?: string, source?: string): Promise<RiskDeal[]> => {
+  const supabase = await createClient();
+  let query = supabase
+    .from("lead_threads")
+    .select("id, title, value, owner_id, stage_id, expected_close_date, days_quiet, folder, reason, today, company:companies!leads_org_id_company_id_fkey(name)")
+    .eq("org_id", orgId)
+    .eq("status", "open")
+    .or("reason.eq.quiet,owner_id.is.null,expected_close_date.lt.today")
+    .order("value", { ascending: false })
+    .limit(500);
+  if (owner) query = query.eq("owner_id", owner);
+  if (source) query = query.eq("source_id", source);
+  const [{ data, error }, { data: stages }, { data: people }] = await Promise.all([
+    query,
+    supabase.from("pipeline_stages").select("id, name").eq("org_id", orgId),
+    supabase.from("memberships").select("user_id, profiles!memberships_user_id_fkey(full_name, email)").eq("org_id", orgId),
+  ]);
+  if (error) throw new Error(error.message);
+  const stageName = new Map((stages ?? []).map((s) => [s.id, s.name]));
+  const personName = new Map((people ?? []).map((p) => [p.user_id, p.profiles?.full_name || p.profiles?.email || null]));
+  return data
+    .map((t): RiskDeal => {
+      const flags: RiskFlag[] = [];
+      if (t.expected_close_date && t.today && t.expected_close_date < t.today) flags.push("overdue");
+      if (t.reason === "quiet") flags.push("quiet");
+      if (!t.owner_id) flags.push("unowned");
+      return {
+        id: t.id!,
+        title: t.title ?? "",
+        value: Number(t.value ?? 0),
+        company: t.company?.name ?? null,
+        owner: t.owner_id ? (personName.get(t.owner_id) ?? null) : null,
+        stage: t.stage_id ? (stageName.get(t.stage_id) ?? null) : null,
+        closeDate: t.expected_close_date,
+        daysQuiet: t.days_quiet,
+        folder: t.folder,
+        flags,
+      };
+    })
+    .filter((d) => d.flags.length);
+});

@@ -561,15 +561,18 @@ export type HeatRow = { key: string; label: string; cells: number[] };
 export function HeatGrid({
   columns,
   rows,
-  cellLabel,
+  unit = "items",
   onSelect,
 }: {
   // `flag` marks a column that needs attention (e.g. stale ages), in text as well as color.
-  columns: { key: string; label: string; flag?: boolean }[];
+  // `description` is the column's long name for tooltips and screen readers.
+  columns: { key: string; label: string; flag?: boolean; description?: string }[];
   rows: HeatRow[];
-  cellLabel: (row: HeatRow, column: number, value: number) => string;
+  // What a cell counts, e.g. "deals".
+  unit?: string;
   onSelect?: (row: HeatRow, column: number) => void;
 }) {
+  const cellLabel = (row: HeatRow, c: number, v: number) => `${row.label}, ${columns[c]?.description ?? columns[c]?.label}: ${v} ${unit}`;
   const max = Math.max(1, ...rows.flatMap((r) => r.cells));
   return (
     <div className="overflow-x-auto">

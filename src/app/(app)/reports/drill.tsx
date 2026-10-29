@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createContext, use, useEffect, useEffectEvent, useRef, useState, useTransition, type ComponentProps, type ReactNode } from "react";
-import { BarList, BulletList, ColumnChart, StatTile, type BarRow, type BulletRow } from "@/components/charts";
+import { BarList, BulletList, ColumnChart, HeatGrid, StatTile, type BarRow, type BulletRow, type HeatRow } from "@/components/charts";
 import { StageBadge } from "@/components/ui";
 import type { DrillRequest } from "@/lib/dashboards";
 import { drillLeads, type DrillResult } from "./actions";
@@ -124,6 +124,12 @@ export function DrillBarList({ requests, ...props }: ComponentProps<typeof BarLi
 export function DrillBulletList({ requests, ...props }: ComponentProps<typeof BulletList> & { requests: Record<string, DrillRequest> }) {
   const open = use(DrillContext);
   return <BulletList {...props} onSelect={open ? (row: BulletRow) => requests[row.key] && open(requests[row.key]!) : undefined} />;
+}
+
+// Requests are keyed "rowKey:column".
+export function DrillHeatGrid({ requests, ...props }: Omit<ComponentProps<typeof HeatGrid>, "onSelect"> & { requests: Record<string, DrillRequest> }) {
+  const open = use(DrillContext);
+  return <HeatGrid {...props} onSelect={open ? (row: HeatRow, column: number) => requests[`${row.key}:${column}`] && open(requests[`${row.key}:${column}`]!) : undefined} />;
 }
 
 // Requests are keyed "index:seriesKey" for a segment and "index" for the whole column.

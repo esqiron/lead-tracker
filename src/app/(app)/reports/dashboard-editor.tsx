@@ -9,6 +9,7 @@ import {
   SPANS,
   TEMPLATES,
   TREND_MEASURES,
+  WIDGET_GROUPS,
   WIDGET_TYPES,
   widgetTitle,
   type DashboardFilters,
@@ -456,8 +457,7 @@ function ToolButton({ label, onClick, disabled, children }: { label: string; onC
 
 // --- Library ---------------------------------------------------------------------------
 
-const GROUPS = ["Numbers", "Over time", "Breakdowns"] as const;
-const SUGGESTIONS = ["Forecast vs goal", "Who's ahead of goal", "Won by source", "Win rate", "Why we lose"];
+const SUGGESTIONS = ["Forecast vs goal", "Who's ahead of goal", "Deals at risk", "Stuck deals", "Won by source", "Why we lose"];
 
 // Plain keyword matching for "describe a chart": nothing typed here leaves the browser.
 function match(text: string): { type: WidgetType; options?: Partial<Widget["options"]> } | null {
@@ -468,6 +468,10 @@ function match(text: string): { type: WidgetType; options?: Partial<Widget["opti
   if (/quota|ahead|behind|target|vs goal/.test(s)) return { type: "quota" };
   if (/this quarter|so far/.test(s)) return { type: "kpi", options: { metric: "won_quarter", sparkline: false } };
   if (/forecast|goal|on track|projection/.test(s)) return { type: "forecast" };
+  if (/risk|overdue|attention|neglected|unowned/.test(s)) return { type: "risk" };
+  if (/aging|ageing|stuck|stale|sitting/.test(s)) return { type: "aging" };
+  if (/calendar|busy|per day|activity by day/.test(s)) return { type: "calendar" };
+  if (/reply time|time to reply|response time|how fast|speed/.test(s)) return { type: "reply" };
   if (/funnel|conversion|how far/.test(s)) return { type: "funnel" };
   if (/lost|lose|why/.test(s)) return { type: "lost_reasons" };
   if (/stage.*(day|long|time)|stuck|slow|velocity|days/.test(s)) return { type: "velocity" };
@@ -526,7 +530,7 @@ function WidgetLibrary({ onAdd }: { onAdd: (type: WidgetType, options?: Partial<
         ))}
       </div>
       {miss ? <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-300">Couldn&apos;t match “{miss}” to a widget. Try a suggestion, or pick one below.</p> : null}
-      {GROUPS.map((g) => (
+      {WIDGET_GROUPS.map((g) => (
         <div key={g} className="space-y-1">
           <p className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">{g}</p>
           {(Object.entries(WIDGET_TYPES) as [WidgetType, (typeof WIDGET_TYPES)[WidgetType]][])

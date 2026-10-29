@@ -34,14 +34,15 @@ async function DashboardContent({ params, searchParams }: PageProps<"/reports/[d
       period: param(sp.period) ?? saved.period,
       from: hasPeriod ? param(sp.from) : saved.from,
       to: hasPeriod ? param(sp.to) : saved.to,
-      owner: param(sp.owner) ?? saved.owner,
+      // "me" (a personal dashboard's saved owner) is whoever is looking.
+      owner: ((o) => (o === "me" ? ctx.user.id : o))(param(sp.owner) ?? saved.owner),
       source: param(sp.source) ?? saved.source,
     },
     org.timezone,
   );
   const compareParam = param(sp.compare);
   const compare = compareParam === undefined ? (saved.compare ?? true) : compareParam === "1";
-  const widgetCtx: WidgetContext = { orgId: org.id, currency: org.currency, filters, compare, canExport: isAdminRole(ctx.role), isAdmin: isAdminRole(ctx.role) };
+  const widgetCtx: WidgetContext = { orgId: org.id, currency: org.currency, timezone: org.timezone, filters, compare, canExport: isAdminRole(ctx.role), isAdmin: isAdminRole(ctx.role) };
   const shared = dashboard.visibility === "org";
   // Creators edit their own; admins also edit shared ones (same rule as RLS).
   const canEdit = dashboard.saved && (dashboard.createdBy === ctx.user.id || (shared && isAdminRole(ctx.role)));
@@ -94,7 +95,7 @@ async function DashboardContent({ params, searchParams }: PageProps<"/reports/[d
         filterBar={
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <PeriodPicker periods={PERIODS} from={filters.from} to={filters.to} defaultPeriod={saved.period ?? "this_month"} />
-            <ParamSelect name="owner" label="Owner" allLabel="Everyone" defaultValue={saved.owner} options={members.map((m) => ({ value: m.id, label: m.name }))} />
+            <ParamSelect name="owner" label="Owner" allLabel="Everyone" defaultValue={saved.owner} options={[{ value: "me", label: "Me" }, ...members.map((m) => ({ value: m.id, label: m.name }))]} />
             <ParamSelect name="source" label="Source" allLabel="All sources" defaultValue={saved.source} options={sources.map((s) => ({ value: s.id, label: s.name }))} />
             <CompareToggle defaultOn={saved.compare ?? true} />
           </div>

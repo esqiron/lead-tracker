@@ -34,8 +34,10 @@ export function PeriodPicker({
 
   return (
     <div className="flex flex-wrap items-center gap-2" aria-busy={pending}>
+      {/* autoComplete off: stops the browser restoring an old choice over the URL's on reload. */}
       <Select
         aria-label="Period"
+        autoComplete="off"
         value={period}
         onChange={(e) => set(e.target.value === "custom" ? { period: "custom", from, to } : { period: e.target.value === defaultPeriod ? null : e.target.value, from: null, to: null })}
         className="h-9 w-auto min-w-40"

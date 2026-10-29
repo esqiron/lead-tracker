@@ -1,13 +1,15 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { BarList, ChartCard, DataTable, ForecastChart, LineChart, type Series, type SeriesColor } from "@/components/charts";
-import { forecastFor, kpisFor, reportFor, splitFor, type ForecastData, type WidgetContext } from "@/lib/dashboard-data";
+import { BarList, CalendarHeat, ChartCard, DataTable, ForecastChart, HeatLegend, LineChart, type Series, type SeriesColor } from "@/components/charts";
+import { Badge } from "@/components/ui";
+import { activityDaysFor, agingFor, firstReplyFor, forecastFor, kpisFor, reportFor, riskFor, splitFor, type ForecastData, type WidgetContext } from "@/lib/dashboard-data";
 import { widgetTitle, type DrillQuery, type DrillRequest, type KpiMetric, type Widget, type WidgetOf } from "@/lib/dashboards";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, todayIn } from "@/lib/format";
 import { quarterLabel } from "@/lib/goals";
+import { FOLDERS } from "@/lib/inbox";
 import { queryString } from "@/lib/list-filters";
 import { bucketLabel, periodLabel, winRate } from "@/lib/reports";
-import { DrillBarList, DrillBulletList, DrillButton, DrillColumnChart, DrillStatTile } from "./drill";
+import { DrillBarList, DrillBulletList, DrillButton, DrillColumnChart, DrillHeatGrid, DrillStatTile } from "./drill";
 
 // One server component per widget type. Each reads only what it shows; the
 // shared queries are deduplicated per request (see lib/dashboard-data.ts).
@@ -588,6 +590,169 @@ async function QuotaWidget({ w, ctx }: { w: WidgetOf<"quota">; ctx: WidgetContex
   );
 }
 
+// --- Pipeline health ------------------------------------------------------------------
+
+const AGE_WORDS = ["0–7 days", "8–14 days", "15–30 days", "31–60 days", "over 60 days"];
+const AGE_COLUMNS = ["0–7 d", "8–14 d", "15–30 d", "31–60 d", "61+ d"].map((label, i) => ({ key: String(i), label, flag: i >= 3, description: `${AGE_WORDS[i]} in stage` }));
+
+async function AgingWidget({ w, ctx }: { w: WidgetOf<"aging">; ctx: WidgetContext }) {
+  const rows = await agingFor(ctx.orgId, ctx.filters.owner, ctx.filters.source);
+  const money = (n: number) => formatMoney(n, ctx.currency);
+  const stale = rows.reduce((sum, r) => sum + r.counts[3]! + r.counts[4]!, 0);
+  const requests = Object.fromEntries(
+    rows.flatMap((r) =>
+      AGE_WORDS.map((words, i) => [`${r.stage_id}:${i}`, rightNow(drill(ctx, widgetTitle(w), `${r.name} for ${words}`, [{ kind: "aging", params: { stage_id: r.stage_id, bucket: i } }]))]),
+    ),
+  );
+  return (
+    <ChartCard
+      title={widgetTitle(w)}
+      description="Open deals by stage and how long they've been in it, right now"
+      table={<DataTable head={["Stage", ...AGE_COLUMNS.map((c) => c.label), "Value"]} rows={rows.map((r) => [r.name, ...r.counts, money(r.values.reduce((a, b) => a + Number(b), 0))])} />}
+    >
+      {rows.some((r) => r.counts.some(Boolean)) ? (
+        <>
+          <DrillHeatGrid
+            requests={requests}
+            columns={AGE_COLUMNS}
+            rows={rows.map((r) => ({ key: r.stage_id, label: r.name, cells: r.counts }))}
+            unit="deals"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <HeatLegend high="More deals" />
+            <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-400">{stale ? `${stale} deal${stale === 1 ? "" : "s"} over 30 days in one stage` : "Nothing over 30 days in one stage"}</p>
+          </div>
+        </>
+      ) : (
+        <p className="py-6 text-center text-sm text-zinc-500">No open deals.</p>
+      )}
+    </ChartCard>
+  );
+}
+
+const DAY = 86_400_000;
+const isoDay = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+async function CalendarWidget({ w, ctx }: { w: WidgetOf<"calendar">; ctx: WidgetContext }) {
+  // The last 13 weeks, Monday first, ending today (the dashboard period doesn't apply).
+  const today = todayIn(ctx.timezone);
+  const t = Date.parse(`${today}T00:00:00Z`);
+  const monday = t - ((new Date(t).getUTCDay() + 6) % 7) * DAY;
+  const from = isoDay(monday - 12 * 7 * DAY);
+  const days = await activityDaysFor(ctx.orgId, from, today, ctx.filters.owner);
+  const total = days.reduce((sum, d) => sum + d.count, 0);
+  const workdays = days.filter((d) => ![0, 6].includes(new Date(`${d.day}T00:00:00Z`).getUTCDay())).length;
+  const busiest = days.reduce((best, d) => (d.count > (best?.count ?? 0) ? d : best), null as (typeof days)[number] | null);
+  const weeks = Array.from({ length: 13 }, (_, k) => isoDay(monday - (12 - k) * 7 * DAY));
+  return (
+    <ChartCard
+      title={widgetTitle(w)}
+      description="Calls, emails, notes, meetings and tasks members logged, last 13 weeks"
+      table={<DataTable head={["Week of", "Activities"]} rows={weeks.map((wk, k) => [wk, days.filter((d) => d.day >= wk && (k === 12 || d.day < weeks[k + 1]!)).reduce((s2, d) => s2 + d.count, 0)])} />}
+    >
+      <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
+        <span>
+          <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{total.toLocaleString("en")}</b> activities
+        </span>
+        <span>
+          About <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{workdays ? (total / workdays).toLocaleString("en", { maximumFractionDigits: total / workdays < 10 ? 1 : 0 }) : 0}</b> per working day
+        </span>
+        {busiest ? (
+          <span>
+            Busiest: <b className="font-semibold text-zinc-900 dark:text-zinc-100">{new Date(`${busiest.day}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}</b>
+          </span>
+        ) : null}
+      </p>
+      <CalendarHeat days={days.map((d) => ({ date: d.day, count: d.count }))} />
+    </ChartCard>
+  );
+}
+
+const REPLY_BUCKETS = ["< 1 h", "1–4 h", "4–24 h", "1–3 days", "3+ days"];
+
+async function ReplyWidget({ w, ctx }: { w: WidgetOf<"reply">; ctx: WidgetContext }) {
+  const r = await firstReplyFor(...args(ctx));
+  const requests = Object.fromEntries(REPLY_BUCKETS.map((label, i) => [String(i), drill(ctx, widgetTitle(w), `First reply in ${label}`, [{ kind: "reply", params: { bucket: i } }])]));
+  return (
+    <ChartCard
+      title={widgetTitle(w)}
+      description="Website form and API leads created in this period, until a member called, met or emailed them"
+      table={<DataTable head={["First reply", "Leads"]} rows={[...REPLY_BUCKETS.map((label, i) => [label, r.buckets[i] ?? 0]), ["No reply yet", r.waiting]]} />}
+    >
+      {r.leads ? (
+        <>
+          <p className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500">
+            <span>
+              Median <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{hours(r.median_hours === null ? null : Number(r.median_hours))}</b>
+            </span>
+            <span>
+              <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{pct(r.within_4h / r.leads)}</b> within 4 hours
+            </span>
+            {r.waiting ? (
+              <DrillButton request={drill(ctx, widgetTitle(w), "No reply yet", [{ kind: "reply", params: { waiting: true } }])} className="text-amber-700 dark:text-amber-400">
+                {r.waiting} still waiting
+              </DrillButton>
+            ) : null}
+          </p>
+          <DrillColumnChart labels={REPLY_BUCKETS} series={[{ key: "leads", label: "Leads", color: "accent", values: r.buckets }]} requests={requests} />
+        </>
+      ) : (
+        <p className="py-6 text-center text-sm text-zinc-500">No form or API leads in this period.</p>
+      )}
+    </ChartCard>
+  );
+}
+
+const RISK_BADGE = {
+  overdue: { tone: "warning", text: (d: { closeDate: string | null }) => `Close date passed${d.closeDate ? ` ${new Date(`${d.closeDate}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })}` : ""}` },
+  quiet: { tone: "warning", text: (d: { daysQuiet: number | null }) => `Quiet ${d.daysQuiet ?? "a while"} days` },
+  unowned: { tone: "neutral", text: () => "No owner" },
+} as const;
+
+async function RiskWidget({ w, ctx }: { w: WidgetOf<"risk">; ctx: WidgetContext }) {
+  const deals = await riskFor(ctx.orgId, ctx.filters.owner, ctx.filters.source);
+  const money = (n: number) => formatMoney(n, ctx.currency);
+  return (
+    <ChartCard
+      title={widgetTitle(w)}
+      description="Open deals past their close date, gone quiet, or with nobody on them, right now"
+      table={<DataTable head={["Deal", "Value", "Why"]} rows={deals.map((d) => [d.title, money(d.value), d.flags.map((f) => RISK_BADGE[f].text(d)).join("; ")])} />}
+    >
+      {deals.length ? (
+        <>
+          <p className="mb-2 text-sm text-zinc-500">
+            <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{deals.length}</b> deal{deals.length === 1 ? "" : "s"} ·{" "}
+            <b className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{money(deals.reduce((sum, d) => sum + d.value, 0))}</b>
+          </p>
+          <ul className="max-h-80 divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
+            {deals.map((d) => (
+              <li key={d.id}>
+                <Link
+                  href={`/inbox/everyone/${FOLDERS.find((f) => f.folder === d.folder)?.key ?? "needs-reply"}/${d.id}`}
+                  className="-mx-1 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 rounded-md px-1 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
+                >
+                  <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{d.title}</span>
+                  <span className="text-right text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">{money(d.value)}</span>
+                  <span className="col-span-2 truncate text-xs text-zinc-500">{[d.company, d.stage, d.owner ?? "Unassigned"].filter(Boolean).join(" · ")}</span>
+                  <span className="col-span-2 flex flex-wrap gap-1">
+                    {d.flags.map((f) => (
+                      <Badge key={f} tone={RISK_BADGE[f].tone}>
+                        {RISK_BADGE[f].text(d)}
+                      </Badge>
+                    ))}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p className="py-6 text-center text-sm text-zinc-500">Nothing needs a look right now.</p>
+      )}
+    </ChartCard>
+  );
+}
+
 // --- Dispatch -------------------------------------------------------------------------
 
 function renderWidget(w: Widget, ctx: WidgetContext): Promise<ReactNode> | ReactNode {
@@ -614,6 +779,14 @@ function renderWidget(w: Widget, ctx: WidgetContext): Promise<ReactNode> | React
       return <ForecastWidget w={w} ctx={ctx} />;
     case "quota":
       return <QuotaWidget w={w} ctx={ctx} />;
+    case "aging":
+      return <AgingWidget w={w} ctx={ctx} />;
+    case "calendar":
+      return <CalendarWidget w={w} ctx={ctx} />;
+    case "reply":
+      return <ReplyWidget w={w} ctx={ctx} />;
+    case "risk":
+      return <RiskWidget w={w} ctx={ctx} />;
   }
 }
 

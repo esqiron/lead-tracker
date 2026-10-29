@@ -58,6 +58,10 @@ const widgetSchema = z.discriminatedUnion("type", [
     options: z.object({ range: z.boolean().default(true), previous: z.boolean().default(true) }).default({ range: true, previous: true }),
   }),
   z.object({ ...base, type: z.literal("quota"), options: noOptions }),
+  z.object({ ...base, type: z.literal("aging"), options: noOptions }),
+  z.object({ ...base, type: z.literal("calendar"), options: noOptions }),
+  z.object({ ...base, type: z.literal("reply"), options: noOptions }),
+  z.object({ ...base, type: z.literal("risk"), options: noOptions }),
 ]);
 export type Widget = z.infer<typeof widgetSchema>;
 export type WidgetType = Widget["type"];
@@ -75,6 +79,7 @@ export function parseLayout(raw: unknown): Widget[] {
   });
 }
 
+// Saved owner filter "me" means whoever is looking (for personal dashboards).
 export const filtersSchema = z.object({
   period: z.string().max(20).optional(),
   from: z.string().max(10).optional(),
@@ -133,6 +138,34 @@ export const TEMPLATES = {
       { id: "team", type: "team", span: 12, options: {} },
     ],
   },
+  "my-week": {
+    name: "My week",
+    filters: { period: "last_30", owner: "me", compare: true },
+    layout: [
+      kpi("won-quarter", "won_quarter", false),
+      kpi("won", "won_value"),
+      kpi("activities", "activities"),
+      kpi("new-leads", "new_leads"),
+      { id: "risk", type: "risk", span: 6, options: {} },
+      { id: "aging", type: "aging", span: 6, options: {} },
+      { id: "calendar", type: "calendar", span: 12, options: {} },
+    ],
+  },
+  marketing: {
+    name: "Marketing",
+    filters: { period: "last_12m", compare: true },
+    layout: [
+      kpi("new-leads", "new_leads"),
+      kpi("reply-time", "median_reply"),
+      kpi("win-rate", "win_rate"),
+      kpi("avg-deal", "avg_deal"),
+      { id: "new-by-source", type: "trend", span: 12, options: { measure: "new_leads", split: "source", chart: "lines" } },
+      { id: "won-by-source", type: "trend", span: 6, options: { measure: "won_value", split: "source", chart: "columns" } },
+      { id: "reply", type: "reply", span: 6, options: {} },
+      { id: "funnel", type: "funnel", span: 6, options: {} },
+      { id: "sources", type: "sources", span: 6, options: {} },
+    ],
+  },
 } satisfies Record<string, { name: string; filters: DashboardFilters; layout: Widget[] }>;
 export type TemplateKey = keyof typeof TEMPLATES;
 
@@ -144,7 +177,9 @@ export function templateDashboard(key: TemplateKey): Dashboard {
 export const isTemplateKey = (key: string): key is TemplateKey => Object.hasOwn(TEMPLATES, key);
 
 // What the widget library offers, and each type's defaults.
-export const WIDGET_TYPES: Record<WidgetType, { name: string; group: "Numbers" | "Over time" | "Breakdowns"; description: string; span: Span; options: Widget["options"] }> = {
+export const WIDGET_GROUPS = ["Numbers", "Over time", "Breakdowns", "Pipeline health"] as const;
+
+export const WIDGET_TYPES: Record<WidgetType, { name: string; group: (typeof WIDGET_GROUPS)[number]; description: string; span: Span; options: Widget["options"] }> = {
   kpi: { name: "Number", group: "Numbers", description: "One figure, its change and a trend line", span: 3, options: { metric: "new_leads", sparkline: true } },
   trend: { name: "Over time", group: "Over time", description: "Won value, deals won or new leads per period, split by source or owner", span: 6, options: { measure: "won_value", split: "source", chart: "columns" } },
   won_lost: { name: "Won and lost", group: "Over time", description: "Deals closed per period, won against lost", span: 6, options: {} },
@@ -156,6 +191,10 @@ export const WIDGET_TYPES: Record<WidgetType, { name: string; group: "Numbers" |
   team: { name: "Team", group: "Breakdowns", description: "Won value, win rate and activity per person", span: 12, options: {} },
   forecast: { name: "Quarter forecast", group: "Over time", description: "Won so far, what the pipeline should add by the quarter's end, and the goal", span: 8, options: { range: true, previous: true } },
   quota: { name: "Team vs goal", group: "Breakdowns", description: "Each person's won value and forecast against their goal this quarter", span: 4, options: {} },
+  aging: { name: "Deal aging", group: "Pipeline health", description: "Open deals by stage and how long they've sat in it", span: 6, options: {} },
+  calendar: { name: "Activity calendar", group: "Pipeline health", description: "Calls, emails, notes and meetings per day, last 13 weeks", span: 6, options: {} },
+  reply: { name: "Time to first reply", group: "Pipeline health", description: "How fast form and API leads hear back", span: 6, options: {} },
+  risk: { name: "Deals at risk", group: "Pipeline health", description: "Open deals past their close date, gone quiet, or with no owner", span: 6, options: {} },
 };
 
 export const TREND_MEASURES = { won_value: "Won value", won_count: "Won", new_leads: "New leads" } as const;

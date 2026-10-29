@@ -496,6 +496,69 @@ export type Database = {
           },
         ]
       }
+      dashboards: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          filters: Json
+          id: string
+          layout: Json
+          layout_version: number
+          name: string
+          org_id: string
+          position: number
+          template: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          filters?: Json
+          id?: string
+          layout?: Json
+          layout_version?: number
+          name: string
+          org_id: string
+          position?: number
+          template?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          filters?: Json
+          id?: string
+          layout?: Json
+          layout_version?: number
+          name?: string
+          org_id?: string
+          position?: number
+          template?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instance_settings: {
         Row: {
           allow_multiple_orgs: boolean

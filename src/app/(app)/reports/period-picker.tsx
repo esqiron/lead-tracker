@@ -5,12 +5,23 @@ import { useTransition } from "react";
 import { Input, Select } from "@/components/ui";
 
 // Period presets, plus from/to dates when "Custom range" is picked.
-export function PeriodPicker({ periods, from, to }: { periods: readonly { value: string; label: string }[]; from: string; to: string }) {
+// `defaultPeriod` is what applies with no period in the URL (a dashboard's saved default).
+export function PeriodPicker({
+  periods,
+  from,
+  to,
+  defaultPeriod = "this_month",
+}: {
+  periods: readonly { value: string; label: string }[];
+  from: string;
+  to: string;
+  defaultPeriod?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
-  const period = searchParams.get("period") ?? "this_month";
+  const period = searchParams.get("period") ?? defaultPeriod;
 
   const set = (changes: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams);
@@ -26,7 +37,7 @@ export function PeriodPicker({ periods, from, to }: { periods: readonly { value:
       <Select
         aria-label="Period"
         value={period}
-        onChange={(e) => set(e.target.value === "custom" ? { period: "custom", from, to } : { period: e.target.value === "this_month" ? null : e.target.value, from: null, to: null })}
+        onChange={(e) => set(e.target.value === "custom" ? { period: "custom", from, to } : { period: e.target.value === defaultPeriod ? null : e.target.value, from: null, to: null })}
         className="h-9 w-auto min-w-40"
       >
         {periods.map((p) => (

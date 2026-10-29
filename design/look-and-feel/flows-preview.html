@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Lead Tracker Flows</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Flows gallery: same quiet workbench as the looks gallery. Each concept is a different
+     way of working (not a reskin), shown as a short sequence of screens in one of the three
+     shortlisted looks (Console, Studio, Quiet). */
+  :root {
+    --g-bg: #f3f3f1;
+    --g-surface: #ffffff;
+    --g-fg: #1c1c1a;
+    --g-muted: #6b6b66;
+    --g-line: #dcdcd7;
+    --g-accent: #1c1c1a;
+    --g-on-accent: #ffffff;
+    --g-font: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --g-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --g-bg: #151514; --g-surface: #1e1e1c; --g-fg: #ecece8; --g-muted: #9a9a94; --g-line: #33332f;
+      --g-accent: #ecece8; --g-on-accent: #151514; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --g-bg: #151514; --g-surface: #1e1e1c; --g-fg: #ecece8; --g-muted: #9a9a94; --g-line: #33332f;
+    --g-accent: #ecece8; --g-on-accent: #151514; color-scheme: dark;
+  }
+  body { background: var(--g-bg); color: var(--g-fg); font-family: var(--g-font); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--g-bg); }
+  .g-wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1680px; margin: 0 auto; }
+  .g-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--g-bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--g-line); }
+  .g-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-block: 12px; }
+  .g-brand { display: flex; flex-direction: column; gap: 2px; margin-right: auto; min-width: 0; }
+  .g-brand b { font-size: 15px; letter-spacing: -0.01em; }
+  .g-brand span { font-size: 12px; color: var(--g-muted); }
+  .g-seg { display: inline-flex; border: 1px solid var(--g-line); border-radius: 8px; padding: 2px; background: var(--g-surface); flex-wrap: wrap; }
+  .g-seg button { font: inherit; font-size: 13px; border: 0; background: none; color: var(--g-muted); padding: 5px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .g-seg button[aria-pressed="true"] { background: var(--g-accent); color: var(--g-on-accent); }
+  .g-seg button:focus-visible, .g-card:focus-visible, .g-chip:focus-visible, .g-nav button:focus-visible { outline: 2px solid var(--g-fg); outline-offset: 2px; }
+  .g-chips { display: flex; gap: 6px; overflow-x: auto; padding-block: 0 12px; scrollbar-width: thin; }
+  .g-chip { font: inherit; font-size: 13px; flex: none; border: 1px solid var(--g-line); background: var(--g-surface); color: var(--g-fg); border-radius: 999px; padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .g-chip[aria-pressed="true"] { border-color: var(--g-fg); box-shadow: inset 0 0 0 1px var(--g-fg); }
+  .g-look { font: 500 10px var(--g-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--g-muted); border: 1px solid var(--g-line); border-radius: 4px; padding: 1px 5px; }
+
+  .g-main { padding-block: 24px 64px; }
+  .g-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 28px 24px; }
+  .g-card { display: flex; flex-direction: column; gap: 10px; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; min-width: 0; }
+  .g-card:hover .g-thumb { border-color: var(--g-fg); }
+  .g-thumb { border: 1px solid var(--g-line); border-radius: 10px; overflow: hidden; height: 330px; position: relative; background: var(--g-surface); }
+  .g-cap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .g-cap b { font-size: 15px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .g-cap span { font-size: 13px; color: var(--g-muted); text-wrap: pretty; }
+
+  .g-single { display: grid; gap: 24px; }
+  .g-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; align-items: end; }
+  .g-head h1 { font-size: clamp(24px, 3vw, 34px); margin: 0; letter-spacing: -0.02em; text-wrap: balance; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .g-head p { margin: 6px 0 0; color: var(--g-muted); font-size: 16px; max-width: 70ch; text-wrap: pretty; }
+  .g-nav { display: flex; gap: 6px; }
+  .g-nav button { font: inherit; font-size: 13px; border: 1px solid var(--g-line); background: var(--g-surface); color: var(--g-fg); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .g-why { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 1px; background: var(--g-line); border: 1px solid var(--g-line); border-radius: 10px; overflow: hidden; }
+  .g-why > div { background: var(--g-surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .g-why h3 { margin: 0; font: 500 11px var(--g-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--g-muted); }
+  .g-why p, .g-why li { margin: 0; font-size: 14px; line-height: 1.5; text-wrap: pretty; }
+  .g-why ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+  .g-screens { display: grid; gap: 32px; }
+  .g-screen-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin: 0 0 10px; }
+  .g-screen-head b { font-size: 15px; }
+  .g-screen-head span { font-size: 14px; color: var(--g-muted); max-width: 90ch; text-wrap: pretty; }
+  .g-step { font: 500 11px var(--g-mono); color: var(--g-muted); }
+  .g-stage { border: 1px solid var(--g-line); border-radius: 10px; overflow: hidden; position: relative; max-width: 1282px; }
+
+  .g-scaler { position: relative; overflow: hidden; }
+  .g-scaler > .lt-frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  .g-thumb .g-scaler { height: 100%; }
+  .lt-frame { box-sizing: border-box; width: 1280px; min-height: 820px; font-size: 14px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+  .lt-frame *, .lt-frame *::before, .lt-frame *::after { box-sizing: border-box; }
+  .g-empty { color: var(--g-muted); padding: 48px 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="g-bar">
+  <div class="g-wrap">
+    <div class="g-bar-in">
+      <div class="g-brand"><b>Lead Tracker · new ways of working</b><span>UX concepts in the shortlisted looks (Console, Studio, Quiet). First up: the chosen direction, Threads + Weekly review.</span></div>
+      <div class="g-seg" role="group" aria-label="Mode" id="g-mode">
+        <button type="button" data-mode="compare">Compare all</button>
+        <button type="button" data-mode="single">One at a time</button>
+      </div>
+    </div>
+    <div class="g-chips" id="g-chips" role="group" aria-label="Concept"></div>
+  </div>
+</div>
+<main class="g-wrap g-main" id="g-main"></main>
+
+<script src="data.js"></script>
+<script src="variants/console.js"></script>
+<script src="variants/studio.js"></script>
+<script src="variants/quiet.js"></script>
+<script src="flows/inbox.js"></script>
+<script src="flows/focus.js"></script>
+<script src="flows/accounts.js"></script>
+<script src="flows/threads.js"></script>
+<script src="flows/review.js"></script>
+<script src="flows/command.js"></script>
+<script src="flows/runway.js"></script>
+<script>
+(function () {
+  const H = window.LT_H;
+  const LOOKS = Object.fromEntries((window.LT_VARIANTS || []).map((v) => [v.id, v]));
+  const F = (window.LT_FLOWS || []).slice();
+  const ORDER = ["inbox", "focus", "threads", "command", "review", "runway", "accounts"];
+  F.sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
+  const state = { mode: "compare", flow: F[0] && F[0].id };
+
+  // Fonts + CSS: the three looks (base classes) and each concept's own additions.
+  const families = [...new Set(Object.values(LOOKS).flatMap((v) => v.fonts || []).concat(F.flatMap((f) => f.fonts || [])))];
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?" + families.concat(["Instrument+Sans:wght@400;500;600", "JetBrains+Mono:wght@400;500"]).map((f) => "family=" + f).join("&") + "&display=swap";
+  document.head.appendChild(link);
+  for (const css of Object.values(LOOKS).map((v) => v.css).concat(F.map((f) => f.css))) {
+    const style = document.createElement("style");
+    style.textContent = css || "";
+    document.head.appendChild(style);
+  }
+
+  function readHash() {
+    const h = location.hash.slice(1);
+    if (!h || h === "compare") return;
+    if (F.some((f) => f.id === h)) { state.mode = "single"; state.flow = h; }
+  }
+  function writeHash() {
+    try { history.replaceState(null, "", "#" + (state.mode === "compare" ? "compare" : state.flow)); } catch (e) {}
+  }
+
+  function frame(f, screen) {
+    let html;
+    try { html = screen.render(window.LT_DATA, H); }
+    catch (e) { console.error(f.id, screen.id, e); html = `<div style="padding:40px;font:14px monospace;color:#b00">Render error in ${f.id}/${screen.id}: ${H.esc(e.message)}</div>`; }
+    return `<div class="g-scaler"><div class="lt-frame v-${f.look} f-${f.id}" data-screen="${screen.id}">${html}</div></div>`;
+  }
+
+  const ro = new ResizeObserver(() => fit());
+  function fit() {
+    document.querySelectorAll(".g-scaler").forEach((s) => {
+      const fr = s.firstElementChild;
+      const scale = Math.min(1, s.parentElement.clientWidth / 1280);
+      fr.style.transform = `scale(${scale})`;
+      if (!s.closest(".g-thumb")) s.style.height = Math.ceil(fr.offsetHeight * scale) + "px";
+    });
+  }
+
+  const lookName = (id) => (LOOKS[id] ? LOOKS[id].name : id);
+
+  function render() {
+    const main = document.getElementById("g-main");
+    document.querySelectorAll("#g-mode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
+    document.getElementById("g-chips").innerHTML = F.map(
+      (f) => `<button type="button" class="g-chip" data-flow="${f.id}" aria-pressed="${state.mode === "single" && state.flow === f.id}">${H.esc(f.name)}<span class="g-look">${H.esc(lookName(f.look))}</span></button>`,
+    ).join("");
+    if (!F.length) { main.innerHTML = `<p class="g-empty">No concepts loaded.</p>`; return; }
+
+    if (state.mode === "compare") {
+      main.innerHTML = `<div class="g-grid">${F.map(
+        (f, i) => `<button type="button" class="g-card" data-flow="${f.id}">
+          <div class="g-thumb">${frame(f, f.screens[0])}</div>
+          <div class="g-cap"><b>${i + 1}. ${H.esc(f.name)} <span class="g-look">${H.esc(lookName(f.look))}</span></b><span>${H.esc(f.pitch)}</span></div>
+        </button>`,
+      ).join("")}</div>`;
+    } else {
+      const f = F.find((x) => x.id === state.flow) || F[0];
+      const i = F.indexOf(f);
+      main.innerHTML = `<div class="g-single">
+        <div class="g-head">
+          <div><h1>${i + 1}. ${H.esc(f.name)} <span class="g-look">${H.esc(lookName(f.look))}</span></h1><p>${H.esc(f.pitch)}</p></div>
+          <div class="g-nav"><button type="button" data-step="-1" aria-label="Previous concept">← Prev</button><button type="button" data-step="1" aria-label="Next concept">Next →</button></div>
+        </div>
+        <div class="g-why">
+          <div><h3>What it fixes</h3><p>${H.esc(f.problem)}</p></div>
+          <div><h3>How it works</h3><ul>${(f.principles || []).map((p) => `<li>${H.esc(p)}</li>`).join("")}</ul></div>
+          <div><h3>Trade-offs</h3><p>${H.esc(f.tradeoffs)}</p></div>
+        </div>
+        <div class="g-screens">${f.screens.map((s, n) => `<section>
+          <div class="g-screen-head"><span class="g-step">${n + 1}/${f.screens.length}</span><b>${H.esc(s.title)}</b><span>${H.esc(s.caption || "")}</span></div>
+          <div class="g-stage">${frame(f, s)}</div>
+        </section>`).join("")}</div>
+      </div>`;
+    }
+    document.querySelectorAll(".g-scaler").forEach((s) => ro.observe(s.parentElement));
+    fit();
+    if (document.fonts) document.fonts.ready.then(fit);
+    writeHash();
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.mode) { state.mode = t.dataset.mode; }
+    else if (t.dataset.flow) { state.mode = "single"; state.flow = t.dataset.flow; window.scrollTo(0, 0); }
+    else if (t.dataset.step) { const i = F.findIndex((f) => f.id === state.flow); state.flow = F[(i + Number(t.dataset.step) + F.length) % F.length].id; window.scrollTo(0, 0); }
+    else return;
+    render();
+  });
+  readHash();
+  render();
+})();
+</script>

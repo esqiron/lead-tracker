@@ -1,0 +1,242 @@
+<title>Lead Tracker Looks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Gallery shell: a quiet neutral workbench so the variants carry all the colour.
+     Layout: sticky control bar (mode + screen + variant), then either a compare grid of
+     scaled thumbnails or one full-width variant with its token sheet. */
+  :root {
+    --g-bg: #f3f3f1;
+    --g-surface: #ffffff;
+    --g-fg: #1c1c1a;
+    --g-muted: #6b6b66;
+    --g-line: #dcdcd7;
+    --g-accent: #1c1c1a;
+    --g-on-accent: #ffffff;
+    --g-font: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --g-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --g-bg: #151514; --g-surface: #1e1e1c; --g-fg: #ecece8; --g-muted: #9a9a94; --g-line: #33332f;
+      --g-accent: #ecece8; --g-on-accent: #151514; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --g-bg: #151514; --g-surface: #1e1e1c; --g-fg: #ecece8; --g-muted: #9a9a94; --g-line: #33332f;
+    --g-accent: #ecece8; --g-on-accent: #151514; color-scheme: dark;
+  }
+  body { background: var(--g-bg); color: var(--g-fg); font-family: var(--g-font); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--g-bg); }
+  .g-wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1680px; margin: 0 auto; }
+  .g-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--g-bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--g-line); }
+  .g-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-block: 12px; }
+  .g-brand { display: flex; flex-direction: column; gap: 2px; margin-right: auto; min-width: 0; }
+  .g-brand b { font-size: 15px; letter-spacing: -0.01em; }
+  .g-brand span { font-size: 12px; color: var(--g-muted); }
+  .g-seg { display: inline-flex; border: 1px solid var(--g-line); border-radius: 8px; padding: 2px; background: var(--g-surface); flex-wrap: wrap; }
+  .g-seg button { font: inherit; font-size: 13px; border: 0; background: none; color: var(--g-muted); padding: 5px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .g-seg button[aria-pressed="true"] { background: var(--g-accent); color: var(--g-on-accent); }
+  .g-seg button:focus-visible, .g-card:focus-visible, .g-chip:focus-visible { outline: 2px solid var(--g-fg); outline-offset: 2px; }
+  .g-chips { display: flex; gap: 6px; overflow-x: auto; padding-block: 0 12px; scrollbar-width: thin; }
+  .g-chip { font: inherit; font-size: 13px; flex: none; border: 1px solid var(--g-line); background: var(--g-surface); color: var(--g-fg); border-radius: 999px; padding: 5px 12px 5px 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .g-chip[aria-pressed="true"] { border-color: var(--g-fg); box-shadow: inset 0 0 0 1px var(--g-fg); }
+  .g-sw { display: inline-flex; border-radius: 999px; overflow: hidden; border: 1px solid var(--g-line); }
+  .g-sw i { width: 8px; height: 16px; display: block; }
+
+  .g-main { padding-block: 24px 64px; }
+  .g-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 28px 24px; }
+  .g-card { display: flex; flex-direction: column; gap: 10px; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; min-width: 0; }
+  .g-card:hover .g-thumb { border-color: var(--g-fg); }
+  .g-thumb { border: 1px solid var(--g-line); border-radius: 10px; overflow: hidden; height: 330px; position: relative; background: var(--g-surface); }
+  .g-cap { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .g-cap b { font-size: 15px; display: flex; gap: 8px; align-items: baseline; }
+  .g-cap b small { font: 500 11px var(--g-mono); color: var(--g-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .g-cap span { font-size: 13px; color: var(--g-muted); text-wrap: pretty; }
+
+  .g-single { display: grid; gap: 24px; }
+  .g-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; align-items: end; }
+  .g-head h1 { font-size: clamp(24px, 3vw, 34px); margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+  .g-head p { margin: 4px 0 0; color: var(--g-muted); font-size: 15px; max-width: 70ch; text-wrap: pretty; }
+  .g-nav { display: flex; gap: 6px; }
+  .g-nav button { font: inherit; font-size: 13px; border: 1px solid var(--g-line); background: var(--g-surface); color: var(--g-fg); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .g-tokens { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 1px; background: var(--g-line); border: 1px solid var(--g-line); border-radius: 10px; overflow: hidden; }
+  .g-tok { background: var(--g-surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .g-tok h3 { margin: 0; font: 500 11px var(--g-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--g-muted); }
+  .g-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .g-color { display: flex; flex-direction: column; gap: 4px; font-size: 12px; min-width: 0; }
+  .g-color i { height: 28px; border-radius: 6px; border: 1px solid var(--g-line); display: block; }
+  .g-color code { font: 11px var(--g-mono); color: var(--g-muted); }
+  .g-type { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .g-type .g-sample { font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+  .g-type small { font: 11px var(--g-mono); color: var(--g-muted); }
+  .g-tok p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--g-fg); }
+  .g-screens { display: grid; gap: 28px; }
+  .g-screen-label { font: 500 11px var(--g-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--g-muted); margin: 0 0 8px; }
+  .g-stage { border: 1px solid var(--g-line); border-radius: 10px; overflow: hidden; position: relative; }
+
+  /* Frames render at desktop width and are scaled to fit. */
+  .g-scaler { position: relative; overflow: hidden; }
+  .g-scaler > .lt-frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  .g-thumb .g-scaler { height: 100%; }
+  .g-stage { max-width: 1282px; }
+  .lt-frame { box-sizing: border-box; width: 1280px; min-height: 820px; font-size: 14px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+  .lt-frame *, .lt-frame *::before, .lt-frame *::after { box-sizing: border-box; }
+  .g-empty { color: var(--g-muted); padding: 48px 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="g-bar">
+  <div class="g-wrap">
+    <div class="g-bar-in">
+      <div class="g-brand"><b>Lead Tracker · look &amp; feel</b><span>Eight directions, same screens, same data. Pick one, or a mix.</span></div>
+      <div class="g-seg" role="group" aria-label="Mode" id="g-mode">
+        <button type="button" data-mode="compare">Compare all</button>
+        <button type="button" data-mode="single">One at a time</button>
+      </div>
+      <div class="g-seg" role="group" aria-label="Screen" id="g-screen">
+        <button type="button" data-screen="board">Leads board</button>
+        <button type="button" data-screen="contacts">Contacts</button>
+        <button type="button" data-screen="detail">Contact detail</button>
+        <button type="button" data-screen="all" id="g-all">All three</button>
+      </div>
+    </div>
+    <div class="g-chips" id="g-chips" role="group" aria-label="Variant"></div>
+  </div>
+</div>
+<main class="g-wrap g-main" id="g-main"></main>
+
+<script src="data.js"></script>
+<script src="variants/ledger.js"></script>
+<script src="variants/transit.js"></script>
+<script src="variants/rolodex.js"></script>
+<script src="variants/console.js"></script>
+<script src="variants/blueprint.js"></script>
+<script src="variants/studio.js"></script>
+<script src="variants/bauhaus.js"></script>
+<script src="variants/quiet.js"></script>
+<script>
+(function () {
+  const V = (window.LT_VARIANTS || []).slice();
+  const ORDER = ["ledger", "transit", "rolodex", "console", "blueprint", "studio", "bauhaus", "quiet"];
+  V.sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
+  const SCREENS = { board: "Leads board", contacts: "Contacts", detail: "Contact detail" };
+  const state = { mode: "compare", screen: "board", variant: V[0] && V[0].id };
+
+  // Fonts + scoped CSS from every variant.
+  const families = [...new Set(V.flatMap((v) => v.fonts || []))];
+  if (families.length) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?" + families.map((f) => "family=" + f).join("&") + "&display=swap";
+    document.head.appendChild(link);
+  }
+  const shellFont = document.createElement("link");
+  shellFont.rel = "stylesheet";
+  shellFont.href = "https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap";
+  document.head.appendChild(shellFont);
+  for (const v of V) {
+    const style = document.createElement("style");
+    style.textContent = v.css || "";
+    document.head.appendChild(style);
+  }
+
+  // Hash: #compare-board | #<variant> | #<variant>-<screen>
+  function readHash() {
+    const h = location.hash.slice(1);
+    if (!h) return;
+    const [a, b] = h.split("-");
+    if (a === "compare") { state.mode = "compare"; if (SCREENS[b]) state.screen = b; return; }
+    if (V.some((v) => v.id === a)) { state.mode = "single"; state.variant = a; state.screen = SCREENS[b] || b === "all" ? b : "all"; }
+  }
+  function writeHash() {
+    const h = state.mode === "compare" ? `compare-${state.screen}` : `${state.variant}-${state.screen}`;
+    try { history.replaceState(null, "", "#" + h); } catch (e) {}
+  }
+
+  function renderScreen(v, screen) {
+    try {
+      return v.render[screen](window.LT_DATA, window.LT_H);
+    } catch (e) {
+      console.error(v.id, screen, e);
+      return `<div style="padding:40px;font:14px monospace;color:#b00">Render error in ${v.id}/${screen}: ${window.LT_H.esc(e.message)}</div>`;
+    }
+  }
+
+  function frame(v, screen) {
+    return `<div class="g-scaler"><div class="lt-frame v-${v.id}" data-screen="${screen}">${renderScreen(v, screen)}</div></div>`;
+  }
+
+  // Scale each 1280px frame to its container; full frames get their scaled height.
+  const ro = new ResizeObserver(() => fit());
+  function fit() {
+    document.querySelectorAll(".g-scaler").forEach((s) => {
+      const f = s.firstElementChild;
+      const w = s.parentElement.clientWidth;
+      const scale = Math.min(1, w / 1280);
+      f.style.transform = `scale(${scale})`;
+      if (!s.closest(".g-thumb")) s.style.height = Math.ceil(f.offsetHeight * scale) + "px";
+    });
+  }
+
+  function swatches(v) {
+    const cs = (v.tokens && v.tokens.color) || [];
+    return `<span class="g-sw" aria-hidden="true">${cs.slice(0, 5).map((c) => `<i style="background:${c.value}"></i>`).join("")}</span>`;
+  }
+
+  function render() {
+    const main = document.getElementById("g-main");
+    document.querySelectorAll("#g-mode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
+    document.getElementById("g-all").hidden = state.mode === "compare";
+    if (state.mode === "compare" && state.screen === "all") state.screen = "board";
+    document.querySelectorAll("#g-screen button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.screen === state.screen)));
+    document.getElementById("g-chips").innerHTML = V.map(
+      (v) => `<button type="button" class="g-chip" data-variant="${v.id}" aria-pressed="${state.mode === "single" && state.variant === v.id}">${swatches(v)}${window.LT_H.esc(v.name)}</button>`,
+    ).join("");
+
+    if (!V.length) { main.innerHTML = `<p class="g-empty">No variants loaded.</p>`; return; }
+
+    if (state.mode === "compare") {
+      main.innerHTML = `<div class="g-grid">${V.map(
+        (v, i) => `<button type="button" class="g-card" data-variant="${v.id}">
+          <div class="g-thumb">${frame(v, state.screen)}</div>
+          <div class="g-cap"><b>${window.LT_H.esc(v.name)} <small>${String.fromCharCode(65 + i)}</small></b><span>${window.LT_H.esc(v.concept)}</span></div>
+        </button>`,
+      ).join("")}</div>`;
+    } else {
+      const v = V.find((x) => x.id === state.variant) || V[0];
+      const idx = V.indexOf(v);
+      const t = v.tokens || {};
+      const screens = state.screen === "all" ? Object.keys(SCREENS) : [state.screen];
+      main.innerHTML = `<div class="g-single">
+        <div class="g-head">
+          <div><h1>${String.fromCharCode(65 + idx)} · ${window.LT_H.esc(v.name)}</h1><p>${window.LT_H.esc(v.concept)}</p></div>
+          <div class="g-nav"><button type="button" data-step="-1" aria-label="Previous variant">← Prev</button><button type="button" data-step="1" aria-label="Next variant">Next →</button></div>
+        </div>
+        <div class="g-tokens">
+          <div class="g-tok" style="grid-column: span 2"><h3>Colour</h3><div class="g-colors">${(t.color || []).map((c) => `<div class="g-color"><i style="background:${c.value}"></i>${window.LT_H.esc(c.name)}<code>${c.value}</code></div>`).join("")}</div></div>
+          <div class="g-tok"><h3>Type</h3>${(t.type || []).map((ty) => `<div class="g-type"><span class="g-sample" style="font-family:${ty.family};${ty.style || ""}">${window.LT_H.esc(ty.sample || "Negotiation €27,500")}</span><small>${window.LT_H.esc(ty.role)} · ${window.LT_H.esc(ty.family.split(",")[0].replace(/"/g, ""))}</small></div>`).join("")}</div>
+          <div class="g-tok"><h3>Spacing</h3><p>${window.LT_H.esc(t.spacing || "")}</p><h3>Shape</h3><p>${window.LT_H.esc(t.shape || "")}</p>${t.signature ? `<h3>Signature</h3><p>${window.LT_H.esc(t.signature)}</p>` : ""}</div>
+        </div>
+        <div class="g-screens">${screens.map((s) => `<section><p class="g-screen-label">${SCREENS[s]}</p><div class="g-stage">${frame(v, s)}</div></section>`).join("")}</div>
+      </div>`;
+    }
+    document.querySelectorAll(".g-scaler").forEach((s) => ro.observe(s.parentElement));
+    fit();
+    if (document.fonts) document.fonts.ready.then(fit);
+    writeHash();
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.mode) { state.mode = t.dataset.mode; if (state.mode === "single" && !state.variant) state.variant = V[0].id; }
+    else if (t.dataset.screen) state.screen = t.dataset.screen;
+    else if (t.dataset.variant) { state.mode = "single"; state.variant = t.dataset.variant; if (state.screen !== "all") state.screen = "all"; window.scrollTo(0, 0); }
+    else if (t.dataset.step) { const i = V.findIndex((v) => v.id === state.variant); state.variant = V[(i + Number(t.dataset.step) + V.length) % V.length].id; window.scrollTo(0, 0); }
+    else return;
+    render();
+  });
+  readHash();
+  render();
+})();
+</script>

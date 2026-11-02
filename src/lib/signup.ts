@@ -1,14 +1,15 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { deploymentMode, env } from "@/lib/env";
+import { env } from "@/lib/env";
 import { actionEmail, isEmailConfigured, sendEmail } from "@/lib/email";
-import { legalInfo } from "@/lib/legal";
+import { legalInfo, requestLegalInfo } from "@/lib/legal";
 
 // Public sign-up exists only on a hosted instance with its legal pages and
 // email set up: people must be able to read what they accept, and prove they
-// own their address before the account works.
-export function signupOpen() {
-  return deploymentMode() === "hosted" && legalInfo() !== null && isEmailConfigured();
+// own their address before the account works. Read per request, from the
+// runtime environment. (Legal info only exists in hosted mode.)
+export async function signupOpen() {
+  return (await requestLegalInfo()) !== null && isEmailConfigured();
 }
 
 // The version people accept: the "last updated" date of the legal pages.

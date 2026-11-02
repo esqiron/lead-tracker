@@ -24,7 +24,7 @@ async function LoginPageContent({ searchParams }: PageProps<"/login">) {
       <LoginForm
         next={typeof next === "string" ? next : undefined}
         notice={typeof error === "string" ? NOTICES[error] : undefined}
-        canSignUp={signupOpen()}
+        canSignUp={await signupOpen()}
       />
     </AuthShell>
   );

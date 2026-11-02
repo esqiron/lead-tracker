@@ -93,7 +93,7 @@ export async function createFirstOwner(_: FormState, formData: FormData): Promis
 // is opened; then the person creates their organization in onboarding.
 export async function signUp(_: FormState, formData: FormData): Promise<FormState> {
   const version = termsVersion();
-  if (!signupOpen() || !version) return { error: "Sign-up isn't available on this server." };
+  if (!(await signupOpen()) || !version) return { error: "Sign-up isn't available on this server." };
 
   const fullName = field(formData, "full_name");
   const email = field(formData, "email").toLowerCase();

@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { PageSpinner } from "@/components/page-spinner";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { connection } from "next/server";
 import { AuthShell } from "@/components/auth-shell";
 import { getUser } from "@/lib/auth";
 import { signupOpen } from "@/lib/signup";
@@ -13,9 +12,7 @@ export const metadata: Metadata = { title: "Create an account" };
 // Hosted mode only. Self-hosted instances have one owner (from /setup) and
 // add everyone else by invite.
 async function SignupPageContent() {
-  // Decided by the server's environment at request time, not when it was built.
-  await connection();
-  if (!signupOpen()) notFound();
+  if (!(await signupOpen())) notFound();
   if (await getUser()) redirect("/");
 
   return (

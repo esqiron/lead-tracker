@@ -94,6 +94,42 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
+// Studio's "double bezel": a tinted shell with the white card set inside it.
+export function Bezel({ className, innerClassName, children }: { className?: string; innerClassName?: string; children: ReactNode }) {
+  return (
+    <div className={cx("rounded-[1.875rem] bg-zinc-900/[0.035] p-1.5 inset-ring-1 inset-ring-hairline dark:bg-white/[0.035]", className)}>
+      <div
+        className={cx(
+          "rounded-3xl bg-white shadow-[0_0_0_1px_rgba(21,24,29,0.04),0_1px_2px_rgba(16,24,40,0.04),0_10px_24px_-14px_rgba(16,24,40,0.2)] dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05)]",
+          innerClassName,
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Small uppercase label in a pill, above page titles.
+export function Eyebrow({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-block rounded-full bg-white/70 px-3 py-1.5 text-[10px] leading-none font-semibold tracking-[0.18em] text-zinc-500 uppercase ring-1 ring-hairline dark:bg-zinc-900/70 dark:text-zinc-400">
+      {children}
+    </span>
+  );
+}
+
+// The arrow in a circle at the end of a primary button. The button needs `relative`.
+export function ButtonArrow() {
+  return (
+    <span aria-hidden className="absolute top-1 right-1 bottom-1 grid aspect-square place-items-center rounded-full bg-white/20 dark:bg-zinc-950/15">
+      <svg viewBox="0 0 20 20" className="size-4 fill-none stroke-current stroke-[1.6] [stroke-linecap:round] [stroke-linejoin:round]">
+        <path d="M5 10h10M11 6l4 4-4 4" />
+      </svg>
+    </span>
+  );
+}
+
 export function Logo() {
   return (
     <span className="inline-flex items-center gap-2.5 font-display text-[15px] font-bold tracking-tight text-zinc-900 dark:text-zinc-100">

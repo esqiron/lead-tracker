@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { canEditRole, requireReadyOrg } from "@/lib/auth";
 import { userMessage } from "@/lib/errors";
-import { contactName, zonedToISO } from "@/lib/format";
-import { escapeLike, isEmail } from "@/lib/forms";
+import { contactName, isLocalDateTime, zonedToISO } from "@/lib/format";
+import { cleanSearch, escapeLike, isEmail } from "@/lib/forms";
 import { FOLDERS } from "@/lib/inbox";
 import { isLawfulBasis } from "@/lib/privacy";
 import { createClient } from "@/lib/supabase/server";
@@ -82,8 +82,9 @@ export async function startConversation(input: StartInput): Promise<StartResult>
   if (closeDate && !/^\d{4}-\d{2}-\d{2}$/.test(closeDate)) fieldErrors.close_date = "Pick a date.";
   if (!isActivityType(firstType) || firstType === "task") fieldErrors.first = "Pick what happened.";
   if (Object.keys(fieldErrors).length) return { fieldErrors };
-
   const due = clean(input.next?.due, 16);
+  if (due && !isLocalDateTime(due)) return { error: "Pick a valid date for the next step." };
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("start_conversation", {
     p_org: org.id,
@@ -126,20 +127,38 @@ export async function startConversation(input: StartInput): Promise<StartResult>
   };
 }
 
+// How long "Undo" stays possible after starting a conversation.
+const UNDO_WINDOW_MS = 10 * 60 * 1000;
+
 // Undo for "Conversation started": moves the new deal (and the person and
-// company, if they were created with it) to the trash.
+// company, if they were created with it) to the trash. The IDs come from the
+// URL, so only records this user created together in the last few minutes
+// qualify; a crafted link can't trash anything else.
 export async function undoStartConversation(leadId: string, createdContactId?: string, createdCompanyId?: string): Promise<{ error?: string }> {
-  const { org } = await requireReadyOrg();
+  const { org, role, user } = await requireReadyOrg();
+  if (!canEditRole(role)) return { error: "You have view-only access." };
   if (!isUuid(leadId)) return { error: "Nothing to undo." };
   const supabase = await createClient();
+  const since = new Date(Date.now() - UNDO_WINDOW_MS).toISOString();
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("contact_id, company_id")
+    .eq("id", leadId)
+    .eq("org_id", org.id)
+    .eq("created_by", user.id)
+    .gte("created_at", since)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!lead) return { error: "It's too late to undo this. Move the deal to the trash instead." };
+
   const now = new Date().toISOString();
   const { error } = await supabase.from("leads").update({ deleted_at: now }).eq("id", leadId).eq("org_id", org.id);
   if (error) return { error: userMessage(error) };
-  if (createdContactId && isUuid(createdContactId)) {
-    await supabase.from("contacts").update({ deleted_at: now }).eq("id", createdContactId).eq("org_id", org.id);
+  if (createdContactId && createdContactId === lead.contact_id) {
+    await supabase.from("contacts").update({ deleted_at: now }).eq("id", createdContactId).eq("org_id", org.id).eq("created_by", user.id).gte("created_at", since);
   }
-  if (createdCompanyId && isUuid(createdCompanyId)) {
-    await supabase.from("companies").update({ deleted_at: now }).eq("id", createdCompanyId).eq("org_id", org.id);
+  if (createdCompanyId && createdCompanyId === lead.company_id) {
+    await supabase.from("companies").update({ deleted_at: now }).eq("id", createdCompanyId).eq("org_id", org.id).eq("created_by", user.id).gte("created_at", since);
   }
   refreshInbox(leadId);
   revalidatePath("/contacts");
@@ -151,7 +170,7 @@ export type PersonMatch = { id: string; name: string; email: string | null; titl
 // People for the "With" field, by name or email.
 export async function searchPeople(query: string): Promise<PersonMatch[]> {
   const { org } = await requireReadyOrg();
-  const q = clean(query, 80);
+  const q = cleanSearch(clean(query, 80));
   if (q.length < 2) return [];
   const like = `%${escapeLike(q)}%`;
   const supabase = await createClient();
@@ -259,6 +278,7 @@ export async function logToThread(input: LogInput): Promise<{ error?: string }> 
 
   const due = clean(input.due, 16);
   const nextDue = clean(input.next?.due, 16);
+  if ((due && !isLocalDateTime(due)) || (nextDue && !isLocalDateTime(nextDue))) return { error: "Pick a valid date and time." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("log_activity", {
     p_org: org.id,

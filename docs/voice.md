@@ -38,6 +38,8 @@ Restart the app after changing them.
 
 API keys stay on the server. Nothing is stored apart from the changes you ask for; the conversation lives in the open panel and is gone when you close it. Each user gets 40 requests per 10 minutes.
 
+The assistant makes at most 3 changes per request, and asks before marking a deal won or lost: the change only happens after you say yes. That keeps text in the CRM (a note from a website form, say) from steering it into changes you didn't ask for.
+
 ## Privacy
 
 With voice on, recordings and the CRM data the assistant reads (names, deal details, notes) are sent to ElevenLabs and to your LLM provider. Add both to your sub-processor list and processing agreements ([gdpr.md](gdpr.md)), and check their data retention settings. Leave the keys unset if that doesn't work for you.

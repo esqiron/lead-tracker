@@ -18,7 +18,7 @@ export function ResetPasswordForm() {
       <Field label="Confirm new password" htmlFor="confirm_password">
         <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" required />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Saving…">
+      <SubmitButton arrow className="w-full" pendingLabel="Saving…">
         Save password
       </SubmitButton>
     </form>

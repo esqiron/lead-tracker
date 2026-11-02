@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { canEditRole, isAdminRole, requireReadyOrg } from "@/lib/auth";
 import { userMessage } from "@/lib/errors";
 import { field } from "@/lib/forms";
-import { zonedToISO } from "@/lib/format";
+import { isLocalDateTime, zonedToISO } from "@/lib/format";
 import { getCandidates, getSession, type ReviewScope } from "@/lib/review";
 import { createClient } from "@/lib/supabase/server";
 
@@ -58,6 +58,7 @@ export async function answerReview(input: ReviewAnswer): Promise<{ error?: strin
 
   const nextBody = (input.next?.body ?? "").trim().slice(0, 500);
   const due = (input.next?.due ?? "").slice(0, 16);
+  if (nextBody && due && !isLocalDateTime(due)) return { error: "Pick a valid date for the next step." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("review_lead", {
     p_org: org.id,

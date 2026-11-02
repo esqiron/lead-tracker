@@ -19,7 +19,7 @@ export function LoginForm({ next, email, notice }: { next?: string; email?: stri
       <Field label="Password" htmlFor="password">
         <Input id="password" name="password" type="password" autoComplete="current-password" required autoFocus={Boolean(email)} />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Signing in…">
+      <SubmitButton arrow className="w-full" pendingLabel="Signing in…">
         Sign in
       </SubmitButton>
       <p className="text-center text-sm">

@@ -16,6 +16,7 @@ async function NoAccessPageContent() {
 
   return (
     <AuthShell
+      eyebrow="No access"
       title="You don't have access yet"
       description={`${ctx.user.email} isn't a member of this workspace. Ask an admin to send you an invitation.`}
     >

@@ -84,8 +84,9 @@ export async function saveDashboard(id: string, patch: DashboardPatch, rerender 
 
 export async function resetToTemplate(id: string): Promise<Result> {
   if (!isUuid(id)) return { error: "That dashboard no longer exists." };
+  const { org } = await requireReadyOrg();
   const supabase = await createClient();
-  const { data } = await supabase.from("dashboards").select("template").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("dashboards").select("template").eq("id", id).eq("org_id", org.id).maybeSingle();
   if (!data?.template || !isTemplateKey(data.template)) return { error: "This dashboard didn't start from a template." };
   const t = TEMPLATES[data.template];
   return saveDashboard(id, { filters: t.filters, layout: freshIds(t.layout) }, true);
@@ -94,8 +95,9 @@ export async function resetToTemplate(id: string): Promise<Result> {
 export async function duplicateDashboard(id: string): Promise<Result> {
   if (!isUuid(id) && !isTemplateKey(id)) return { error: "That dashboard no longer exists." };
   if (isTemplateKey(id)) return createDashboard({ template: id });
+  const { org } = await requireReadyOrg();
   const supabase = await createClient();
-  const { data } = await supabase.from("dashboards").select("name, filters, layout, template").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("dashboards").select("name, filters, layout, template").eq("id", id).eq("org_id", org.id).maybeSingle();
   if (!data) return { error: "That dashboard no longer exists." };
   const layout = layoutSchema.safeParse(data.layout);
   return insert({

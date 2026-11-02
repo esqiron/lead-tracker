@@ -16,6 +16,7 @@ async function PendingPageContent() {
 
   return (
     <AuthShell
+      eyebrow="Almost ready"
       title={`${ctx.org?.name ?? "Your workspace"} is being set up`}
       description="An admin is still finishing setup. Check back in a little while — you'll go straight to the dashboard once it's done."
     >

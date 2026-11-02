@@ -64,7 +64,8 @@ See **[docs/self-hosting.md](docs/self-hosting.md)**. In short:
 
 Details in [docs/roles.md](docs/roles.md).
 
-- **No public signup.** The first person to open a fresh install becomes the owner. Everyone else joins through an invite link, which creates their account already confirmed.
+- **No public signup when self-hosted.** The first person to open a fresh install becomes the owner. Everyone else joins through an invite link, which creates their account already confirmed.
+- **Hosted mode** (`DEPLOYMENT_MODE=hosted`, several organizations on one instance) adds sign-up at `/signup`: people accept the terms, confirm their email, then create their own organization. It needs SMTP and the legal pages set up; see the [hosted checklist](docs/self-hosting.md#hardening-checklist).
 - **Email is optional.** Without SMTP, the wizard gives admins invite links to share themselves. Password resets need SMTP ([docs/email-setup.md](docs/email-setup.md)).
 
 ## Security
@@ -89,7 +90,7 @@ supabase/migrations/   schema, RLS policies, RPCs (single source of truth)
 supabase/tests/        pgTAP tests for RLS and permissions (`npm run db:test`)
 src/proxy.ts           session refresh + redirect to /login
 src/lib/auth.ts        current user/org, routing rules, page guards
-src/app/(auth)/        login, first-run setup, forgot password
+src/app/(auth)/        login, first-run setup, sign-up (hosted), forgot password
 src/app/invite/        accept an invitation
 src/app/onboarding/    setup wizard steps
 src/app/(app)/         inbox (home) and weekly review, leads (pipeline), contacts (people), reports, settings

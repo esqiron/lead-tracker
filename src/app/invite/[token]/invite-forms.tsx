@@ -12,7 +12,7 @@ export function AcceptInvitationForm({ token }: { token: string }) {
   return (
     <form action={action} className="space-y-4">
       {state.error ? <Alert>{state.error}</Alert> : null}
-      <SubmitButton className="w-full" pendingLabel="Joining…">
+      <SubmitButton arrow className="w-full" pendingLabel="Joining…">
         Accept invitation
       </SubmitButton>
     </form>
@@ -30,7 +30,7 @@ export function SignInAndAcceptForm({ token, email }: { token: string; email: st
       <Field label="Password" htmlFor="password">
         <Input id="password" name="password" type="password" autoComplete="current-password" required autoFocus />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Signing in…">
+      <SubmitButton arrow className="w-full" pendingLabel="Signing in…">
         Sign in and join
       </SubmitButton>
       <p className="text-center text-sm">
@@ -60,7 +60,7 @@ export function CreateAccountAndAcceptForm({ token, email }: { token: string; em
       <Field label="Confirm password" htmlFor="confirm_password">
         <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" required />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Creating account…">
+      <SubmitButton arrow className="w-full" pendingLabel="Creating account…">
         Create account and join
       </SubmitButton>
     </form>

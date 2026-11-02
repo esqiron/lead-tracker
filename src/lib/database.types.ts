@@ -741,20 +741,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lead_reviews_next_task_id_fkey"
-            columns: ["next_task_id"]
-            isOneToOne: false
-            referencedRelation: "activities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_reviews_next_task_id_fkey"
-            columns: ["next_task_id"]
-            isOneToOne: false
-            referencedRelation: "lead_threads"
-            referencedColumns: ["next_task_id"]
-          },
-          {
             foreignKeyName: "lead_reviews_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -773,6 +759,13 @@ export type Database = {
             columns: ["org_id", "lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_org_id_next_task_id_fkey"
+            columns: ["org_id", "next_task_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
             referencedColumns: ["org_id", "id"]
           },
           {
@@ -1090,6 +1083,11 @@ export type Database = {
           setup_completed_at: string | null
           setup_step: Database["public"]["Enums"]["setup_step"]
           slug: string
+          special_clauses_accepted_at: string | null
+          special_clauses_version: string | null
+          terms_accepted_at: string | null
+          terms_accepted_by: string | null
+          terms_version: string | null
           timezone: string
           updated_at: string
         }
@@ -1109,6 +1107,11 @@ export type Database = {
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_version?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1128,6 +1131,11 @@ export type Database = {
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug?: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_version?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1135,6 +1143,13 @@ export type Database = {
           {
             foreignKeyName: "organizations_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_terms_accepted_by_fkey"
+            columns: ["terms_accepted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1192,6 +1207,10 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          special_clauses_accepted_at: string | null
+          special_clauses_version: string | null
+          terms_accepted_at: string | null
+          terms_version: string | null
           updated_at: string
         }
         Insert: {
@@ -1200,6 +1219,10 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -1208,6 +1231,10 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Relationships: []

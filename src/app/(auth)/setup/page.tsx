@@ -13,6 +13,7 @@ async function SetupPageContent() {
 
   return (
     <AuthShell
+      eyebrow="First-time setup"
       title="Set up Lead Tracker"
       description="Create the owner account first. Next you'll set up your organization and invite your team."
     >

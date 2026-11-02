@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { PageSpinner } from "@/components/page-spinner";
 import type { Metadata } from "next";
 import { requireOnboarding } from "@/lib/auth";
-import { Card } from "@/components/ui";
+import { Bezel } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { finishSetup } from "../actions";
 import { BackLink, WizardFrame } from "../wizard-frame";
@@ -42,11 +42,12 @@ async function ImportStepContent() {
       furthest={org!.setup_step}
       title="You're almost done"
       description="Choose how you'd like to start. You can always import or add more later."
+      bare
     >
       <div className="grid gap-4 sm:grid-cols-3">
         {OPTIONS.map((option) => (
-          <Card key={option.mode} className="flex flex-col p-5">
-            <h2 className="font-medium text-zinc-900 dark:text-zinc-100">{option.title}</h2>
+          <Bezel key={option.mode} className="h-full" innerClassName="flex h-full flex-col p-5">
+            <h2 className="font-display text-[17px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{option.title}</h2>
             <p className="mt-1 flex-1 text-sm text-zinc-600 dark:text-zinc-400">{option.description}</p>
             <form action={finishSetup} className="mt-5">
               <input type="hidden" name="mode" value={option.mode} />
@@ -54,7 +55,7 @@ async function ImportStepContent() {
                 {option.cta}
               </SubmitButton>
             </form>
-          </Card>
+          </Bezel>
         ))}
       </div>
       <div className="mt-8">

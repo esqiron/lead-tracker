@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { canEditRole, requireReadyOrg } from "@/lib/auth";
 import { field, type FormState } from "@/lib/forms";
-import { zonedToISO } from "@/lib/format";
+import { isLocalDateTime, zonedToISO } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { userMessage } from "@/lib/errors";
 
@@ -30,6 +30,7 @@ export async function addActivity(_: FormState, formData: FormData): Promise<For
   if (!body) return { fieldErrors: { body: type === "task" ? "Describe the task." : "Write something first." } };
   if (body.length > 5000) return { fieldErrors: { body: "Keep it under 5,000 characters." } };
   if (!leadId && !contactId) return { error: "Nothing to attach this to." };
+  if (type === "task" && due && !isLocalDateTime(due)) return { fieldErrors: { due_at: "Pick a valid date and time." } };
 
   const supabase = await createClient();
   const { error } = await supabase.from("activities").insert({

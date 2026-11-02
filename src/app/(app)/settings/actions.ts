@@ -15,6 +15,7 @@ import { userMessage } from "@/lib/errors";
 import { allowed, TOO_MANY } from "@/lib/rate-limit";
 import { logEvent } from "@/lib/audit";
 import { isQuarterStart } from "@/lib/goals";
+import { getMembers } from "@/lib/crm";
 import { AUDIT_RETENTION_OPTIONS, CONTACT_RETENTION_OPTIONS } from "@/lib/privacy";
 
 // --- Organization -------------------------------------------------------------
@@ -231,10 +232,12 @@ export async function saveGoals(_: FormState, formData: FormData): Promise<FormS
   const quarter = field(formData, "quarter");
   if (!isQuarterStart(quarter)) return { error: "Pick a quarter." };
 
+  // Goals only for the org's active members (the form has one field each).
+  const memberIds = new Set((await getMembers(org.id)).map((m) => m.id));
   const goals: { user_id: string | null; amount: number }[] = [];
   const fieldErrors: Record<string, string> = {};
   for (const [name, raw] of formData.entries()) {
-    if (name !== "team" && !name.startsWith("user:")) continue;
+    if (name !== "team" && !(name.startsWith("user:") && memberIds.has(name.slice(5)))) continue;
     const text = String(raw).replace(/[\s,]/g, "");
     if (!text) continue;
     const amount = Number(text);

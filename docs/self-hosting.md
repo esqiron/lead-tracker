@@ -90,7 +90,7 @@ The app ships with safe defaults. These steps are on you as the operator. Backgr
 **Hosted mode only (several organizations on one instance)**
 - [ ] `DEPLOYMENT_MODE=hosted` **and** in the database: `update public.instance_settings set allow_multiple_orgs = true;`. Without the database setting, only one organization can ever be created, whatever the app is told.
 - [ ] SMTP is required. Invitations refuse to work without it, because the emailed link is what proves the invitee owns the address.
-- [ ] Have your own legal basics in place: privacy policy, DPA, sub-processor list. See [security.md](security.md#shared-responsibility).
+- [ ] Have your own legal basics in place: privacy policy, DPA, sub-processor list. See [security.md](security.md#shared-responsibility). Set the `LEGAL_*` and `PRIVACY_EMAIL` variables from `.env.example` to publish terms of service at `/terms`, a privacy policy at `/privacy` and a data processing agreement at `/dpa`, linked from the sign-in pages. They're a starting point, not legal advice: read them through, adapt them to how you actually run the service, and have a lawyer check them before going live.
 
 **Ongoing**
 - [ ] Apply new releases and migrations promptly, and watch the repository's security advisories.

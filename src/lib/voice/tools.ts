@@ -6,20 +6,28 @@ import { canEditRole } from "@/lib/auth";
 import { getTimeline } from "@/lib/activities";
 import { getMembers, getStages, type Stage } from "@/lib/crm";
 import { contactName, formatMoney, isoToZonedInput, todayIn } from "@/lib/format";
-import { escapeLike } from "@/lib/forms";
+import { cleanSearch, escapeLike } from "@/lib/forms";
 import { FOLDERS, getInboxSummary, getThread, getThreads, threadPath, type Thread } from "@/lib/inbox";
 import { getReport, PERIODS, readReportFilters } from "@/lib/reports";
 import { createClient } from "@/lib/supabase/server";
 import type { AgentTool } from "@/lib/voice/llm";
+import type { PendingAction } from "@/lib/voice/tokens";
 
 // What the assistant can do, as thin wrappers over the same actions and
 // queries the inbox uses, so permissions, RLS and validation stay in one place.
 
 export type Org = NonNullable<Context["org"]>;
 
-// Things the UI should know about after a turn: a deal to open, and whether
-// anything changed so the page under the dock can refresh.
-export type TurnEffects = { changed: boolean; links: { label: string; href: string }[] };
+// Things the UI should know about after a turn: a deal to open, whether
+// anything changed so the page under the dock can refresh, and a proposed
+// change waiting for the user's yes.
+export type TurnEffects = { changed: boolean; links: { label: string; href: string }[]; pending?: PendingAction };
+
+// CRM text can carry instructions from whoever filled in a public form, so
+// writes are bounded on the server, not just by the prompt: a few per turn,
+// and marking a deal won or lost only runs once the user has confirmed it in
+// a later turn (the proposal travels as a signed token, see tokens.ts).
+const MAX_WRITES_PER_TURN = 3;
 
 const DUE = z
   .string()
@@ -44,8 +52,9 @@ function tool<S extends z.ZodObject>(def: { name: string; description: string; i
 // Tool inputs take the due time as typed; the composer's due fields want a time.
 const withTime = (due?: string) => (due ? (due.includes("T") ? due : `${due}T09:00`) : undefined);
 
-export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffects) {
+export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffects, confirmed: PendingAction | null = null) {
   const { org, user } = ctx;
+  let writes = 0;
   const [stages, members] = await Promise.all([getStages(org.id), getMembers(org.id)]);
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? null;
   const stageName = (id: string) => stages.find((s) => s.id === id)?.name ?? null;
@@ -101,8 +110,10 @@ export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffec
       input: z.object({ query: z.string().min(2).describe("A name, company or deal title, e.g. 'Acme' or 'Hannah'") }),
       run: async ({ query }) => {
         const supabase = await createClient();
-        const q = escapeLike(query.trim().slice(0, 80));
-        const words = query.split(/\s+/).filter((w) => w.length >= 2).map(escapeLike).slice(0, 4);
+        const term = cleanSearch(query.slice(0, 80));
+        if (term.length < 2) return { matches: [] };
+        const q = escapeLike(term);
+        const words = term.split(" ").filter((w) => w.length >= 2).map(escapeLike).slice(0, 4);
         const [people, companies] = await Promise.all([
           supabase
             .from("contacts")
@@ -195,6 +206,10 @@ export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffec
 
   if (!canEditRole(ctx.role)) return { tools: read, stages, canEdit: false };
 
+  // Counts a write; an error result once the turn has used its share.
+  const budget = () =>
+    ++writes > MAX_WRITES_PER_TURN ? { error: `That's ${MAX_WRITES_PER_TURN} changes already. Tell the user what's done and ask them to continue.` } : null;
+
   const write: AgentTool[] = [
     tool({
       name: "log_activity",
@@ -211,6 +226,8 @@ export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffec
       }),
       run: async (input) => {
         const t = await thread(input.lead_id);
+        const over = budget();
+        if (over) return over;
         const { error } = await logToThread({
           leadId: t.id,
           type: input.type,
@@ -242,6 +259,8 @@ export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffec
           if (!match) return { error: `No teammate called ${input.assignee}. Team: ${members.map((m) => m.name).join(", ")}` };
           assignedTo = match.id;
         }
+        const over = budget();
+        if (over) return over;
         const { error } = await logToThread({
           leadId: t.id,
           type: "task",
@@ -267,6 +286,19 @@ export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffec
         const stage = await findStage(input.stage);
         if ("error" in stage) return stage;
         if (stage.is_lost && !input.lost_reason) return { error: "Ask why the deal was lost, then try again with lost_reason." };
+        if (stage.is_won || stage.is_lost) {
+          // What was confirmed is "this deal to this stage"; the note and reason may be reworded.
+          const action = { tool: "move_deal", input: `${t.id}:${stage.id}` };
+          if (confirmed?.tool !== action.tool || confirmed.input !== action.input) {
+            effects.pending = action;
+            return {
+              needs_confirmation: true,
+              instruction: `Nothing has changed yet. Tell the user you'll mark "${t.title}" ${stage.is_won ? "won" : "lost"} and ask them to confirm. If they say yes, call move_deal again for this deal and stage.`,
+            };
+          }
+        }
+        const over = budget();
+        if (over) return over;
         const { error } = await logToThread({
           leadId: t.id,
           type: "note",
@@ -310,6 +342,8 @@ export async function buildTools(ctx: Context & { org: Org }, effects: TurnEffec
           if ("error" in stage) return stage;
           stageId = stage.id;
         }
+        const over = budget();
+        if (over) return over;
         const result = await startConversation({
           title: input.title,
           contactId: input.contact_id,

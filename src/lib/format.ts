@@ -84,6 +84,16 @@ export function initials(name: string) {
 
 // Converts a wall-clock time in `timeZone` (e.g. from <input type="datetime-local">)
 // to an ISO timestamp.
+// A date or datetime-local value (YYYY-MM-DD or YYYY-MM-DDTHH:mm) that
+// zonedToISO can convert. Check form input with it first.
+export function isLocalDateTime(value: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(value);
+  if (!m) return false;
+  const [y, mo, d, h = 0, mi = 0] = m.slice(1).map((v) => (v === undefined ? 0 : Number(v)));
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return date.getUTCMonth() === mo - 1 && date.getUTCDate() === d && h < 24 && mi < 60;
+}
+
 export function zonedToISO(local: string, timeZone: string) {
   const [day, time = "00:00"] = local.split("T");
   const [y, m, d] = day.split("-").map(Number);

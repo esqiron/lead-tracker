@@ -741,20 +741,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lead_reviews_next_task_id_fkey"
-            columns: ["next_task_id"]
-            isOneToOne: false
-            referencedRelation: "activities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_reviews_next_task_id_fkey"
-            columns: ["next_task_id"]
-            isOneToOne: false
-            referencedRelation: "lead_threads"
-            referencedColumns: ["next_task_id"]
-          },
-          {
             foreignKeyName: "lead_reviews_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -773,6 +759,13 @@ export type Database = {
             columns: ["org_id", "lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "lead_reviews_org_id_next_task_id_fkey"
+            columns: ["org_id", "next_task_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
             referencedColumns: ["org_id", "id"]
           },
           {

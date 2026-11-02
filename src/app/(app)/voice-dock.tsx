@@ -38,6 +38,9 @@ export function VoiceDock() {
   // from an older exchange checks it and bails.
   const epoch = useRef(0);
   const turnsRef = useRef<Turn[]>([]);
+  // A change the assistant proposed (marking a deal won or lost), sent back so
+  // the user's "yes" in the next turn can confirm it.
+  const pending = useRef<string | null>(null);
   const mutedRef = useRef(muted);
   const listRef = useRef<HTMLDivElement>(null);
   // send() and listen() call each other; this breaks the cycle.
@@ -71,11 +74,11 @@ export function VoiceDock() {
 
   // Reads a reply aloud; resolves when playback ends (or fails).
   const say = useCallback(
-    async (text: string, mine: number) => {
-      if (mutedRef.current || epoch.current !== mine) return;
+    async (text: string, token: string | undefined, mine: number) => {
+      if (mutedRef.current || epoch.current !== mine || !token) return;
       setStatus("speaking");
       try {
-        const res = await fetch("/api/voice/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+        const res = await fetch("/api/voice/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, token }) });
         if (!res.ok || epoch.current !== mine) return;
         const url = URL.createObjectURL(await res.blob());
         const player = new Audio(url);
@@ -101,9 +104,11 @@ export function VoiceDock() {
       if (input.text) body.append("text", input.text);
       if (input.audio) body.append("audio", input.audio, input.audio.type.includes("mp4") ? "speech.mp4" : "speech.webm");
       body.append("history", JSON.stringify(turnsRef.current.map(({ role, text }) => ({ role, text }))));
+      if (pending.current) body.append("pending", pending.current);
+      pending.current = null;
       if (input.text) setTurns((t) => [...t, { role: "user", text: input.text! }]);
 
-      let data: { transcript?: string; reply?: string; changed?: boolean; links?: Turn["links"]; error?: string };
+      let data: { transcript?: string; reply?: string; speakToken?: string; pending?: string | null; changed?: boolean; links?: Turn["links"]; error?: string };
       try {
         const res = await fetch("/api/voice/turn", { method: "POST", body });
         data = await res.json();
@@ -116,9 +121,10 @@ export function VoiceDock() {
       if (epoch.current !== mine) return;
       if (input.audio && data.transcript) setTurns((t) => [...t, { role: "user", text: data.transcript! }]);
       const reply = data.reply ?? "";
+      pending.current = data.pending ?? null;
       setTurns((t) => [...t, { role: "assistant", text: reply, links: data.links }]);
       if (data.changed) router.refresh();
-      await say(reply, mine);
+      await say(reply, data.speakToken, mine);
       if (epoch.current !== mine) return;
       setStatus("idle");
       // Spoken conversations keep going hands-free until there's silence.
@@ -280,7 +286,7 @@ export function VoiceDock() {
         <h2 className="font-display text-sm font-semibold">Assistant</h2>
         <div className="ml-auto flex items-center gap-1">
           {turns.length ? (
-            <button type="button" onClick={() => (stopEverything(), setTurns([]), setError(null))} className="rounded-full px-2.5 py-1 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100">
+            <button type="button" onClick={() => (stopEverything(), setTurns([]), setError(null), (pending.current = null))} className="rounded-full px-2.5 py-1 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100">
               New chat
             </button>
           ) : null}

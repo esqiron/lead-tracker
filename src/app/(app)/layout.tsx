@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Logo } from "@/components/ui";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getContext } from "@/lib/auth";
+import { voiceEnabled } from "@/lib/voice/config";
 import { AppNav } from "./app-nav";
+import { VoiceDock } from "./voice-dock";
 
 // Shell for the signed-in app. Kept static so it renders instantly; the
 // bits that depend on the session stream in.
@@ -25,8 +27,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+      <Suspense fallback={null}>
+        <Voice />
+      </Suspense>
     </div>
   );
+}
+
+// Only when the server has the voice keys and the user is in an organization.
+async function Voice() {
+  if (!voiceEnabled()) return null;
+  const ctx = await getContext();
+  return ctx?.org ? <VoiceDock /> : null;
 }
 
 async function CurrentUser() {

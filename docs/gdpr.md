@@ -32,7 +32,7 @@ The GDPR gives you one month to answer.
 
 - **Privacy notice.** Tell people what you collect and why, and link it next to your forms. The consent text is set per form under **Settings → Lead capture**.
 - **Pick a lawful basis** for contacts you add by hand or import. Imports don't set one. The contacts CSV export has a lawful basis column, so you can find the ones without one.
-- **Processing agreements** with your sub-processors: your database host (e.g. Supabase) and email provider.
+- **Processing agreements** with your sub-processors: your database host (e.g. Supabase) and email provider, plus ElevenLabs and your LLM provider if you turn on the [voice assistant](voice.md).
 - **Hosting region.** For EU data, pick an EU region for your Supabase project.
 - **Records of processing** (Art. 30), and a data protection impact assessment if your use needs one.
 - **Breach notification** within 72 hours (Art. 33). The audit log and Supabase's logs help you find out what happened.

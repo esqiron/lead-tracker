@@ -11,6 +11,7 @@ An open-source lead tracker with contacts and reporting, for small teams. Self-h
 - **Guided setup**: a first-run wizard for your organization, pipeline, lead sources and team.
 - **CSV import & export**: bring contacts and leads over from a spreadsheet or another CRM, and export any filtered list.
 - **Lead capture**: embeddable website forms (spam-protected, with GDPR consent) and an API for Zapier, Make, n8n or your own backend. See [docs/lead-capture.md](docs/lead-capture.md).
+- **Voice assistant** (optional): talk to the app to follow up on leads, create new ones and check your numbers. Uses ElevenLabs plus your choice of Claude, OpenAI or Gemini. See [docs/voice.md](docs/voice.md).
 - **Privacy tools**: lawful basis per contact, consent records and withdrawal, do-not-contact, per-person data export, erasure and retention rules. They help you meet GDPR obligations; compliance still depends on how you use them. See [docs/gdpr.md](docs/gdpr.md).
 
 > Status: early. Done: inbox and weekly review, setup wizard, auth, invites, roles, leads (board, table, detail), people (table, detail), activity timeline with tasks, settings (organization, members, pipeline, sources, profile), CSV import/export, lead capture (forms and API), reports, and privacy tools. See [SPEC.md](SPEC.md) for what comes next.

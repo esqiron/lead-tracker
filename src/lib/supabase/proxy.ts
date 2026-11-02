@@ -5,7 +5,7 @@ import { sessionCookieOptions } from "@/lib/supabase/cookies";
 
 // Paths reachable without a session.
 // /api/v1 and /f are the public lead capture API and hosted forms.
-const PUBLIC_PATHS = ["/login", "/setup", "/forgot-password", "/auth", "/invite", "/api/v1", "/f", "/privacy", "/terms", "/dpa"];
+const PUBLIC_PATHS = ["/login", "/signup", "/setup", "/forgot-password", "/auth", "/invite", "/api/v1", "/f", "/privacy", "/terms", "/dpa"];
 
 function matches(pathname: string, paths: string[]) {
   return paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));

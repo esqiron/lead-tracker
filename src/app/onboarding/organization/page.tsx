@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { PageSpinner } from "@/components/page-spinner";
 import type { Metadata } from "next";
 import { requireOnboarding } from "@/lib/auth";
+import { acceptedCurrentTerms } from "@/lib/signup";
 import { timezones } from "@/lib/org-options";
 import { WizardFrame } from "../wizard-frame";
 import { OrganizationForm } from "./organization-form";
@@ -9,7 +10,8 @@ import { OrganizationForm } from "./organization-form";
 export const metadata: Metadata = { title: "Organization" };
 
 async function OrganizationStepContent() {
-  const { org } = await requireOnboarding("organization");
+  const { org, user } = await requireOnboarding("organization");
+  const needsConsent = !org && !(await acceptedCurrentTerms(user.id));
 
   return (
     <WizardFrame
@@ -20,6 +22,7 @@ async function OrganizationStepContent() {
     >
       <OrganizationForm
         timezones={timezones()}
+        needsConsent={needsConsent}
         initial={
           org
             ? { name: org.name, currency: org.currency, timezone: org.timezone, dateFormat: org.date_format }

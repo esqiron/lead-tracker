@@ -4,11 +4,20 @@ import { useActionState, useEffect, useRef } from "react";
 import { saveOrganization } from "../actions";
 import { Alert, Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
+import { TermsConsent } from "@/components/terms-consent";
 import { CURRENCIES, DATE_FORMATS } from "@/lib/org-options";
 
 type Initial = { name: string; currency: string; timezone: string; dateFormat: string };
 
-export function OrganizationForm({ timezones, initial }: { timezones: string[]; initial?: Initial }) {
+export function OrganizationForm({
+  timezones,
+  initial,
+  needsConsent,
+}: {
+  timezones: string[];
+  initial?: Initial;
+  needsConsent?: boolean;
+}) {
   const [state, action] = useActionState(saveOrganization, {});
   const errors = state.fieldErrors ?? {};
   const timezoneRef = useRef<HTMLSelectElement>(null);
@@ -55,6 +64,7 @@ export function OrganizationForm({ timezones, initial }: { timezones: string[]; 
           ))}
         </Select>
       </Field>
+      {needsConsent ? <TermsConsent errors={errors} /> : null}
       <div className="flex justify-end pt-2">
         <SubmitButton pendingLabel="Saving…">Continue</SubmitButton>
       </div>

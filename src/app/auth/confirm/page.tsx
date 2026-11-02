@@ -5,15 +5,27 @@ import { PageSpinner } from "@/components/page-spinner";
 import { buttonClass } from "@/components/ui";
 import { param } from "@/lib/forms";
 
-export const metadata: Metadata = { title: "Reset your password", robots: { index: false } };
+export const metadata: Metadata = { title: "Confirm", robots: { index: false } };
 
-// Landing page for emailed password reset links. Using the one-time token
-// takes a click (a POST), so email security scanners that open links in
-// advance don't burn it.
+const PAGES = {
+  recovery: {
+    title: "Reset your password",
+    description: "Continue to choose a new password. The link works once and expires an hour after it was sent.",
+  },
+  signup: {
+    title: "Confirm your email",
+    description: "Continue to confirm your email address and set up your organization.",
+  },
+};
+
+// Landing page for emailed password reset and sign-up links. Using the
+// one-time token takes a click (a POST), so email security scanners that open
+// links in advance don't burn it.
 async function ConfirmContent({ searchParams }: PageProps<"/auth/confirm">) {
   const sp = await searchParams;
   const tokenHash = param(sp.token_hash);
-  if (!tokenHash || param(sp.type) !== "recovery") {
+  const type = param(sp.type);
+  if (!tokenHash || (type !== "recovery" && type !== "signup")) {
     return (
       <AuthShell title="This link isn't valid" description="Request a new password reset link from the sign-in page.">
         <a href="/forgot-password" className={buttonClass("secondary", "w-full")}>
@@ -23,9 +35,10 @@ async function ConfirmContent({ searchParams }: PageProps<"/auth/confirm">) {
     );
   }
   return (
-    <AuthShell title="Reset your password" description="Continue to choose a new password. The link works once and expires an hour after it was sent.">
+    <AuthShell title={PAGES[type].title} description={PAGES[type].description}>
       <form action="/auth/verify" method="post">
         <input type="hidden" name="token_hash" value={tokenHash} />
+        <input type="hidden" name="type" value={type} />
         <button type="submit" className={buttonClass("primary", "w-full")}>
           Continue
         </button>

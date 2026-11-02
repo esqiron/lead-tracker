@@ -2,13 +2,15 @@
 
 import { timingSafeEqual } from "node:crypto";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { instanceInitialized } from "@/lib/auth";
 import { actionEmail, isEmailConfigured, sendEmail } from "@/lib/email";
 import { createPasswordResetLink } from "@/lib/password-reset";
 import { field, isEmail, safeNext, validatePassword, type FormState } from "@/lib/forms";
-import { allowed, notExceeded, requestIp, TOO_MANY } from "@/lib/rate-limit";
+import { allowed, notExceeded, requestIp, TOO_MANY, withinRateLimit } from "@/lib/rate-limit";
+import { consentErrors, signupOpen, startSignup, termsVersion } from "@/lib/signup";
 
 export async function signIn(_: FormState, formData: FormData): Promise<FormState> {
   const email = field(formData, "email").toLowerCase();
@@ -29,6 +31,10 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
+    // Only reported once the password matched, so it reveals nothing new.
+    if (error.code === "email_not_confirmed") {
+      return { error: "Confirm your email first: open the link we sent you when you signed up." };
+    }
     await allowed(...failures);
     return { error: "That email and password don't match." };
   }
@@ -81,6 +87,49 @@ export async function createFirstOwner(_: FormState, formData: FormData): Promis
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
   if (signInError) redirect("/login?next=/onboarding/organization");
   redirect("/onboarding/organization");
+}
+
+// Public sign-up (hosted mode). The account only works once the emailed link
+// is opened; then the person creates their organization in onboarding.
+export async function signUp(_: FormState, formData: FormData): Promise<FormState> {
+  const version = termsVersion();
+  if (!signupOpen() || !version) return { error: "Sign-up isn't available on this server." };
+
+  const fullName = field(formData, "full_name");
+  const email = field(formData, "email").toLowerCase();
+  const password = String(formData.get("password") ?? "");
+
+  const fieldErrors: Record<string, string> = consentErrors(formData);
+  if (!fullName || fullName.length > 120) fieldErrors.full_name = "Enter your name.";
+  if (!isEmail(email) || email.length > 254) fieldErrors.email = "Enter a valid email address.";
+  const passwordError = validatePassword(password, String(formData.get("confirm_password") ?? ""));
+  if (passwordError) fieldErrors.password = passwordError;
+  if (Object.keys(fieldErrors).length) return { fieldErrors };
+
+  const ip = await requestIp();
+  const failClosed = { failClosed: true };
+  if (
+    !(await withinRateLimit(["signup-ip", ip], 5, 3600, failClosed)) ||
+    !(await withinRateLimit(["signup-ip-day", ip], 20, 86400, failClosed)) ||
+    // Caps the confirmation emails the whole instance sends, whoever asks.
+    !(await withinRateLimit(["signup-all"], 300, 3600, failClosed))
+  ) {
+    return { error: TOO_MANY };
+  }
+
+  const done = { message: `Check your email. We sent a link to ${email} to confirm your address and finish creating your account.` };
+  // Bots fill the hidden field; they get the usual answer and nothing is sent.
+  if (field(formData, "_gotcha")) return done;
+
+  // One address gets at most 3 emails an hour. The account is created and the
+  // email sent after the response, so neither the answer nor its timing
+  // shows whether the address already has an account.
+  if (await withinRateLimit(["signup-email", email], 3, 3600, failClosed)) {
+    after(() =>
+      startSignup({ email, password, fullName, version }).catch((error) => console.error("Sign-up failed", error)),
+    );
+  }
+  return done;
 }
 
 export async function requestPasswordReset(_: FormState, formData: FormData): Promise<FormState> {

@@ -1083,6 +1083,11 @@ export type Database = {
           setup_completed_at: string | null
           setup_step: Database["public"]["Enums"]["setup_step"]
           slug: string
+          special_clauses_accepted_at: string | null
+          special_clauses_version: string | null
+          terms_accepted_at: string | null
+          terms_accepted_by: string | null
+          terms_version: string | null
           timezone: string
           updated_at: string
         }
@@ -1102,6 +1107,11 @@ export type Database = {
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_version?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1121,6 +1131,11 @@ export type Database = {
           setup_completed_at?: string | null
           setup_step?: Database["public"]["Enums"]["setup_step"]
           slug?: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_version?: string | null
           timezone?: string
           updated_at?: string
         }
@@ -1128,6 +1143,13 @@ export type Database = {
           {
             foreignKeyName: "organizations_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_terms_accepted_by_fkey"
+            columns: ["terms_accepted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1185,6 +1207,10 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          special_clauses_accepted_at: string | null
+          special_clauses_version: string | null
+          terms_accepted_at: string | null
+          terms_version: string | null
           updated_at: string
         }
         Insert: {
@@ -1193,6 +1219,10 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -1201,6 +1231,10 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          special_clauses_accepted_at?: string | null
+          special_clauses_version?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -14,6 +14,7 @@ import { field, type FormState } from "@/lib/forms";
 import { nextStep, stepIndex, type WizardStep } from "@/lib/onboarding";
 import { saveLeadSources, savePipelineStages } from "@/lib/pipeline-config";
 import { userMessage } from "@/lib/errors";
+import { acceptedCurrentTerms, consentErrors, recordAcceptance, termsVersion } from "@/lib/signup";
 
 async function requireAdminOrg() {
   const ctx = await getContext();
@@ -39,14 +40,19 @@ export async function saveOrganization(_: FormState, formData: FormData): Promis
   const timezone = field(formData, "timezone");
   const dateFormat = field(formData, "date_format");
 
-  const fieldErrors: Record<string, string> = {};
+  const ctx = await getContext();
+  if (!ctx) redirect("/login");
+  // Hosted: whoever creates an organization accepts the terms for it. People
+  // who signed up already did; invited users and older accounts do it here.
+  const version = termsVersion();
+  const needsConsent = !ctx.org && version !== null && !(await acceptedCurrentTerms(ctx.user.id));
+
+  const fieldErrors: Record<string, string> = needsConsent ? consentErrors(formData) : {};
   if (!name || name.length > 120) fieldErrors.name = "Enter a name up to 120 characters.";
   if (!/^[A-Z]{3}$/.test(currency)) fieldErrors.currency = "Pick a currency.";
   if (!timezone) fieldErrors.timezone = "Pick a time zone.";
   if (Object.keys(fieldErrors).length) return { fieldErrors };
 
-  const ctx = await getContext();
-  if (!ctx) redirect("/login");
   const supabase = await createClient();
 
   if (ctx.org) {
@@ -58,6 +64,10 @@ export async function saveOrganization(_: FormState, formData: FormData): Promis
     if (error) return { error: userMessage(error) };
   } else {
     if (!(await canCreateOrganization())) redirect("/no-access");
+    // Recorded on the profile first; the new organization copies it.
+    if (needsConsent && !(await recordAcceptance(ctx.user.id, version))) {
+      return { error: "Couldn't record your acceptance of the terms. Try again." };
+    }
     const { data: orgId, error } = await supabase.rpc("create_organization", {
       p_name: name,
       p_currency: currency,

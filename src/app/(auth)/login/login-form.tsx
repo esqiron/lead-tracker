@@ -6,7 +6,7 @@ import { signIn } from "../actions";
 import { Alert, Field, Input } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 
-export function LoginForm({ next, email, notice }: { next?: string; email?: string; notice?: string }) {
+export function LoginForm({ next, email, notice, canSignUp }: { next?: string; email?: string; notice?: string; canSignUp?: boolean }) {
   const [state, action] = useActionState(signIn, {});
 
   return (
@@ -27,6 +27,14 @@ export function LoginForm({ next, email, notice }: { next?: string; email?: stri
           Forgot your password?
         </Link>
       </p>
+      {canSignUp ? (
+        <p className="border-t border-zinc-200 pt-4 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+          New to Lead Tracker?{" "}
+          <Link href="/signup" className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100">
+            Create an account
+          </Link>
+        </p>
+      ) : null}
     </form>
   );
 }

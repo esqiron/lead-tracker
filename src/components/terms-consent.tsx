@@ -22,9 +22,8 @@ export function TermsConsent({ errors }: { errors?: Record<string, string> }) {
         behalf of my organization, and have read the <Doc href="/privacy">Privacy policy</Doc>.
       </Checkbox>
       <Checkbox name="accept_special_clauses" error={errors?.accept_special_clauses}>
-        I expressly accept the clauses in the <Doc href="/terms">Terms</Doc> that exclude liability (section 9), allow suspension and
-        termination (section 8), changes to the service and the terms (sections 7 and 10), and set the governing law and courts
-        (section 11).
+        I expressly accept the clauses in the <Doc href="/terms">Terms</Doc> that exclude or limit liability, allow suspension and
+        termination, changes to the service and the terms, and set the governing law and courts.
       </Checkbox>
     </div>
   );

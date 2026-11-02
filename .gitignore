@@ -40,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# The hosted instance's own legal pages (terms, privacy policy, DPA): they
+# belong to its operator, not to the project, so they're never committed.
+/src/app/terms/
+/src/app/privacy/
+/src/app/dpa/
+/src/components/legal-page.tsx

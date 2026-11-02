@@ -66,7 +66,9 @@ export function OrganizationForm({
       </Field>
       {needsConsent ? <TermsConsent errors={errors} /> : null}
       <div className="flex justify-end pt-2">
-        <SubmitButton pendingLabel="Saving…">Continue</SubmitButton>
+        <SubmitButton arrow pendingLabel="Saving…">
+          Continue
+        </SubmitButton>
       </div>
     </form>
   );

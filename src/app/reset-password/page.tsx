@@ -12,7 +12,7 @@ async function ResetPasswordPageContent() {
   const ctx = await requireContext();
 
   return (
-    <AuthShell title="Choose a new password" description={<>For {ctx.user.email}</>}>
+    <AuthShell eyebrow="Account recovery" title="Choose a new password" description={<>For {ctx.user.email}</>}>
       <ResetPasswordForm />
     </AuthShell>
   );

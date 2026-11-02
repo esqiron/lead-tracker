@@ -16,7 +16,7 @@ export function ForgotPasswordForm() {
       <Field label="Email" htmlFor="email" error={state.fieldErrors?.email}>
         <Input id="email" name="email" type="email" autoComplete="email" required autoFocus />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Sending…">
+      <SubmitButton arrow className="w-full" pendingLabel="Sending…">
         Send reset link
       </SubmitButton>
       <p className="text-center text-sm">

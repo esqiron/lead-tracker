@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { PageSpinner } from "@/components/page-spinner";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AuthShell } from "@/components/auth-shell";
+import { AuthAside, AuthShell } from "@/components/auth-shell";
 import { getUser, instanceInitialized } from "@/lib/auth";
 import { signupOpen } from "@/lib/signup";
 import { LoginForm } from "./login-form";
@@ -20,11 +20,15 @@ async function LoginPageContent({ searchParams }: PageProps<"/login">) {
 
   const { next, error } = await searchParams;
   return (
-    <AuthShell title="Sign in" description="Welcome back. Sign in to your workspace.">
+    <AuthShell
+      eyebrow="Sign in"
+      title="Welcome back"
+      description="Sign in to your workspace."
+      aside={(await signupOpen()) ? <AuthAside prompt="New to Lead Tracker?" href="/signup" label="Create an account" /> : null}
+    >
       <LoginForm
         next={typeof next === "string" ? next : undefined}
         notice={typeof error === "string" ? NOTICES[error] : undefined}
-        canSignUp={await signupOpen()}
       />
     </AuthShell>
   );

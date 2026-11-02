@@ -30,7 +30,7 @@ export function SetupForm({ needsToken }: { needsToken: boolean }) {
       <Field label="Confirm password" htmlFor="confirm_password">
         <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" required />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Creating account…">
+      <SubmitButton arrow className="w-full" pendingLabel="Creating account…">
         Create owner account
       </SubmitButton>
     </form>

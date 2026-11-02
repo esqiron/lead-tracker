@@ -16,7 +16,7 @@ function Doc({ href, children }: { href: string; children: ReactNode }) {
 // bind if they are expressly accepted on their own.
 export function TermsConsent({ errors }: { errors?: Record<string, string> }) {
   return (
-    <div className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
+    <div className="space-y-3 rounded-2xl bg-zinc-50 p-4 text-[13px] leading-relaxed text-zinc-600 inset-ring-1 inset-ring-hairline dark:bg-zinc-950/40 dark:text-zinc-400">
       <Checkbox name="accept_terms" error={errors?.accept_terms}>
         I accept the <Doc href="/terms">Terms of service</Doc>, including the <Doc href="/dpa">Data processing agreement</Doc>, on
         behalf of my organization, and have read the <Doc href="/privacy">Privacy policy</Doc>.
@@ -34,7 +34,7 @@ function Checkbox({ name, error, children }: { name: string; error?: string; chi
   return (
     <div>
       <label className="flex items-start gap-2.5">
-        <input type="checkbox" name={name} value="on" required aria-invalid={error ? true : undefined} className="mt-0.5 size-4 shrink-0" />
+        <input type="checkbox" name={name} value="on" required aria-invalid={error ? true : undefined} className="mt-0.5 size-4 shrink-0 accent-accent" />
         <span>{children}</span>
       </label>
       {error ? <p className="mt-1 pl-6.5 text-red-600 dark:text-red-400">{error}</p> : null}

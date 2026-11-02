@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { signUp } from "../actions";
 import { Alert, Field, Input } from "@/components/ui";
@@ -37,12 +36,14 @@ export function SignupForm() {
       <Field label="Work email" htmlFor="email" error={errors.email}>
         <Input id="email" name="email" type="email" autoComplete="email" maxLength={254} required />
       </Field>
-      <Field label="Password" htmlFor="password" error={errors.password} hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}>
-        <Input id="password" name="password" type="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required />
-      </Field>
-      <Field label="Confirm password" htmlFor="confirm_password">
-        <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" required />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Password" htmlFor="password" error={errors.password} hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}>
+          <Input id="password" name="password" type="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required />
+        </Field>
+        <Field label="Confirm password" htmlFor="confirm_password">
+          <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" required />
+        </Field>
+      </div>
       <TermsConsent errors={errors} />
       {/* Spam trap: hidden from people, filled by bots. */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
@@ -51,15 +52,9 @@ export function SignupForm() {
           <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" />
         </label>
       </div>
-      <SubmitButton className="w-full" pendingLabel="Creating account…">
+      <SubmitButton arrow className="w-full" pendingLabel="Creating account…">
         Create account
       </SubmitButton>
-      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-        Already have an account?{" "}
-        <Link href="/login" className="text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100">
-          Sign in
-        </Link>
-      </p>
     </form>
   );
 }

@@ -53,9 +53,9 @@ async function TeamStepContent() {
         {pending?.length ? (
           <section>
             <h2 className="mb-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">Pending invitations</h2>
-            <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            <ul className="divide-y divide-zinc-200 rounded-2xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
               {pending.map((invite) => (
-                <li key={invite.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                <li key={invite.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
                   <span className="min-w-0 truncate">
                     {invite.email} <span className="text-zinc-500">· {invite.role}</span>
                   </span>
@@ -71,7 +71,7 @@ async function TeamStepContent() {
           </section>
         ) : null}
 
-        <details className="rounded-lg border border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
+        <details className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm inset-ring-1 inset-ring-hairline dark:bg-zinc-950/40">
           <summary className="cursor-pointer font-medium text-zinc-900 dark:text-zinc-100">What can each role do?</summary>
           <dl className="mt-3 space-y-2">
             {ROLES.map((r) => (

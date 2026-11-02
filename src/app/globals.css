@@ -70,6 +70,24 @@ h2 {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Studio canvas for the pages outside the app (sign-in, sign-up, setup):
+   a soft light from above and a faint teal glow in the far corner. */
+.studio-canvas {
+  background:
+    radial-gradient(900px 420px at 50% -160px, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(700px 500px at 100% 100%, rgba(11, 116, 128, 0.07), transparent 70%),
+    linear-gradient(180deg, #eef0f2, var(--background));
+}
+
+@media (prefers-color-scheme: dark) {
+  .studio-canvas {
+    background:
+      radial-gradient(900px 420px at 50% -160px, rgba(255, 255, 255, 0.06), transparent 70%),
+      radial-gradient(700px 500px at 100% 100%, rgba(63, 179, 191, 0.08), transparent 70%),
+      var(--background);
+  }
+}
+
 /* Chart colors (validated with the dataviz palette checks against the card
    surfaces: #ffffff light, #0d0f12 and #15181d dark). Accent for the measure
    that matters, muted gray for context, viz-1..6 when series need identity.

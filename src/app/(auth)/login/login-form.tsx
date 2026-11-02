@@ -6,7 +6,7 @@ import { signIn } from "../actions";
 import { Alert, Field, Input } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 
-export function LoginForm({ next, email, notice, canSignUp }: { next?: string; email?: string; notice?: string; canSignUp?: boolean }) {
+export function LoginForm({ next, email, notice }: { next?: string; email?: string; notice?: string }) {
   const [state, action] = useActionState(signIn, {});
 
   return (
@@ -19,7 +19,7 @@ export function LoginForm({ next, email, notice, canSignUp }: { next?: string; e
       <Field label="Password" htmlFor="password">
         <Input id="password" name="password" type="password" autoComplete="current-password" required autoFocus={Boolean(email)} />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Signing in…">
+      <SubmitButton arrow className="w-full" pendingLabel="Signing in…">
         Sign in
       </SubmitButton>
       <p className="text-center text-sm">
@@ -27,14 +27,6 @@ export function LoginForm({ next, email, notice, canSignUp }: { next?: string; e
           Forgot your password?
         </Link>
       </p>
-      {canSignUp ? (
-        <p className="border-t border-zinc-200 pt-4 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-          New to Lead Tracker?{" "}
-          <Link href="/signup" className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100">
-            Create an account
-          </Link>
-        </p>
-      ) : null}
     </form>
   );
 }

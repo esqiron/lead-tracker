@@ -36,7 +36,7 @@ async function InvitePageContent({ params }: PageProps<"/invite/[token]">) {
 
   if (!invite) {
     return (
-      <AuthShell title="Invitation not found" description="Check that you copied the whole link, or ask for a new invite.">
+      <AuthShell eyebrow="Invitation" title="Invitation not found" description="Check that you copied the whole link, or ask for a new invite.">
         <Link href="/login" className={buttonClass("secondary", "w-full")}>
           Go to sign in
         </Link>
@@ -46,7 +46,7 @@ async function InvitePageContent({ params }: PageProps<"/invite/[token]">) {
 
   if (invite.status !== "pending") {
     return (
-      <AuthShell title={`Join ${invite.org_name}`} description={STATUS_MESSAGES[invite.status]}>
+      <AuthShell eyebrow="Invitation" title={`Join ${invite.org_name}`} description={STATUS_MESSAGES[invite.status]}>
         <Link href="/login" className={buttonClass("secondary", "w-full")}>
           Go to sign in
         </Link>
@@ -65,13 +65,13 @@ async function InvitePageContent({ params }: PageProps<"/invite/[token]">) {
   if (user) {
     if (user.email?.toLowerCase() === invite.email.toLowerCase()) {
       return (
-        <AuthShell title={`Join ${invite.org_name}`} description={description}>
+        <AuthShell eyebrow="Invitation" title={`Join ${invite.org_name}`} description={description}>
           <AcceptInvitationForm token={token} />
         </AuthShell>
       );
     }
     return (
-      <AuthShell title={`Join ${invite.org_name}`} description={description}>
+      <AuthShell eyebrow="Invitation" title={`Join ${invite.org_name}`} description={description}>
         <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
           This invitation is for <strong className="font-medium">{invite.email}</strong>, but you&apos;re signed in as{" "}
           <strong className="font-medium">{user.email}</strong>.
@@ -86,7 +86,7 @@ async function InvitePageContent({ params }: PageProps<"/invite/[token]">) {
   }
 
   return (
-    <AuthShell title={`Join ${invite.org_name}`} description={description}>
+    <AuthShell eyebrow="Invitation" title={`Join ${invite.org_name}`} description={description}>
       {(await accountExists(invite.email)) ? (
         <SignInAndAcceptForm token={token} email={invite.email} />
       ) : (

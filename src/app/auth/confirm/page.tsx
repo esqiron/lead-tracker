@@ -2,17 +2,19 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AuthShell } from "@/components/auth-shell";
 import { PageSpinner } from "@/components/page-spinner";
-import { buttonClass } from "@/components/ui";
+import { ButtonArrow, buttonClass } from "@/components/ui";
 import { param } from "@/lib/forms";
 
 export const metadata: Metadata = { title: "Confirm", robots: { index: false } };
 
 const PAGES = {
   recovery: {
+    eyebrow: "Account recovery",
     title: "Reset your password",
     description: "Continue to choose a new password. The link works once and expires an hour after it was sent.",
   },
   signup: {
+    eyebrow: "Almost there",
     title: "Confirm your email",
     description: "Continue to confirm your email address and set up your organization.",
   },
@@ -35,12 +37,13 @@ async function ConfirmContent({ searchParams }: PageProps<"/auth/confirm">) {
     );
   }
   return (
-    <AuthShell title={PAGES[type].title} description={PAGES[type].description}>
+    <AuthShell eyebrow={PAGES[type].eyebrow} title={PAGES[type].title} description={PAGES[type].description}>
       <form action="/auth/verify" method="post">
         <input type="hidden" name="token_hash" value={tokenHash} />
         <input type="hidden" name="type" value={type} />
-        <button type="submit" className={buttonClass("primary", "w-full")}>
+        <button type="submit" className={buttonClass("primary", "relative h-11 w-full px-12")}>
           Continue
+          <ButtonArrow />
         </button>
       </form>
     </AuthShell>

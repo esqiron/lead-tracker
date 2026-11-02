@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { PageSpinner } from "@/components/page-spinner";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { AuthShell } from "@/components/auth-shell";
+import { AuthAside, AuthShell } from "@/components/auth-shell";
 import { getUser } from "@/lib/auth";
 import { signupOpen } from "@/lib/signup";
 import { SignupForm } from "./signup-form";
@@ -16,7 +16,13 @@ async function SignupPageContent() {
   if (await getUser()) redirect("/");
 
   return (
-    <AuthShell title="Create an account" description="Lead Tracker is currently free. After confirming your email, you'll set up your organization.">
+    <AuthShell
+      eyebrow="Create an account"
+      title="Start your workspace"
+      description="Lead Tracker is currently free. Confirm your email, then set up your organization."
+      aside={<AuthAside prompt="Already have an account?" href="/login" label="Sign in" />}
+      wide
+    >
       <SignupForm />
     </AuthShell>
   );
